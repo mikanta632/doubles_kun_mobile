@@ -4,6 +4,7 @@ import { AttendanceView } from "./ui/AttendanceView";
 import { MatchesView } from "./ui/MatchesView";
 import { DashboardView } from "./ui/DashboardView";
 import { SettingsView } from "./ui/SettingsView";
+import { UpdateBanner } from "./ui/UpdateCard";
 
 export type Tab = "attendance" | "matches" | "dashboard" | "settings";
 export type Update = (fn: (s: AppState) => AppState) => void;
@@ -46,6 +47,7 @@ export function App() {
   return (
     <>
       <div class="screen">
+        <UpdateBanner />
         {tab === "attendance" && <AttendanceView {...props} />}
         {tab === "matches" && <MatchesView {...props} />}
         {tab === "dashboard" && <DashboardView {...props} />}

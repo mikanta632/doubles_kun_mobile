@@ -10,6 +10,7 @@ import { gameWinProb, ratingDiffForProb } from "../core/winModel";
 import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareText, todayStamp } from "../io";
 import { availablePlayers, emptyState } from "../store";
 import type { PlanMessage, PlanRequest } from "../planWorker";
+import { UpdateCard } from "./UpdateCard";
 
 export function SettingsView({ state, update, notify }: ViewProps) {
   const cfg = state.config;
@@ -144,6 +145,8 @@ export function SettingsView({ state, update, notify }: ViewProps) {
         </div>
         <div class="muted">データはこの端末のブラウザにだけ保存されます。会が終わったら書き出しておくと安心です。</div>
       </div>
+
+      <UpdateCard />
     </>
   );
 }
