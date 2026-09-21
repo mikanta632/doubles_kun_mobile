@@ -36,7 +36,7 @@ export default defineConfig({
     versionJson(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icon.svg"],
+      includeAssets: ["favicon.png", "apple-touch-icon.png"],
       manifest: {
         name: "ダブルスくんモバイル",
         short_name: "ダブルスくん",
@@ -47,10 +47,11 @@ export default defineConfig({
         display: "standalone",
         background_color: "#f3f4f6",
         theme_color: "#2563eb",
+        // デスクトップ版の icon.ico から作った（tools/ ではなく手元の Pillow で生成）
         icons: [
-          { src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
           { src: "icon-192.png", sizes: "192x192", type: "image/png" },
-          { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
       workbox: {
