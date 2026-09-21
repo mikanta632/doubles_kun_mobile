@@ -1,20 +1,23 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import { CONTACT_ALERT, buildDashboard } from "../dashboard";
-import { activePlayers } from "../store";
+import { memberPlayers } from "../store";
 
 type Seg = "people" | "contacts" | "timeline" | "ranking";
 
-export function DashboardView({ state }: ViewProps) {
+export function DashboardView({ state, project }: ViewProps) {
   const [seg, setSeg] = useState<Seg>("people");
-  const d = useMemo(() => buildDashboard(activePlayers(state), state.matches, state.config), [state]);
+  const d = useMemo(() => buildDashboard(memberPlayers(state, project), project.matches, project.config), [state, project]);
 
-  if (d.people.rows.length === 0) return <div class="empty">参加している人がいません。メンバータブで選んでください。</div>;
+  if (d.people.rows.length === 0) return <div class="empty">「{project.name}」に参加者がいません。メンバータブで選んでください。</div>;
 
   return (
     <>
       <div class="topbar">
-        <h1>集計</h1>
+        <div>
+          <h1>集計</h1>
+          <div class="sub">{project.name}・参加者 {d.people.rows.length} 人</div>
+        </div>
       </div>
       <div class="cards">
         {d.cards.map((c) => (

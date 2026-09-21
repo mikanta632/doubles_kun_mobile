@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "preact/hooks";
-import { loadState, saveState, type AppState } from "./store";
+import { currentProject, loadState, saveState, updateCurrent, type AppState, type Project } from "./store";
 import { AttendanceView } from "./ui/AttendanceView";
 import { MatchesView } from "./ui/MatchesView";
 import { DashboardView } from "./ui/DashboardView";
@@ -10,11 +10,16 @@ import type { ComponentType } from "preact";
 
 export type Tab = "attendance" | "matches" | "dashboard" | "settings";
 export type Update = (fn: (s: AppState) => AppState) => void;
+export type UpdateProject = (fn: (p: Project, s: AppState) => Project) => void;
 export type Notify = (msg: string) => void;
 
 export interface ViewProps {
   state: AppState;
+  /** いま開いている会 */
+  project: Project;
   update: Update;
+  /** いま開いている会だけを書き換える */
+  updateProject: UpdateProject;
   notify: Notify;
 }
 
@@ -27,7 +32,7 @@ const TABS: { key: Tab; label: string; icon: ComponentType }[] = [
 
 export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
-  const [tab, setTab] = useState<Tab>(() => (loadState().players.length ? "matches" : "attendance"));
+  const [tab, setTab] = useState<Tab>(() => (currentProject(state).members.length ? "matches" : "attendance"));
   const [toast, setToast] = useState<string | null>(null);
 
   const update: Update = useCallback((fn) => {
@@ -37,6 +42,7 @@ export function App() {
       return next;
     });
   }, []);
+  const updateProject: UpdateProject = useCallback((fn) => update((s) => updateCurrent(s, fn)), [update]);
 
   const notify: Notify = useCallback((msg) => setToast(msg), []);
   useEffect(() => {
@@ -45,7 +51,8 @@ export function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const props: ViewProps = { state, update, notify };
+  const project = currentProject(state);
+  const props: ViewProps = { state, project, update, updateProject, notify };
   return (
     <>
       <div class="screen">

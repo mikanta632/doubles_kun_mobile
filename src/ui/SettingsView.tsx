@@ -2,33 +2,29 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import type { EngineConfig } from "../core/config";
 import { DEFAULT_CONFIG } from "../core/config";
-import { recalculateAll } from "../core/elo";
 import { newMatch } from "../core/models";
 import { estimatePairModel, estimateSummary, isConclusive } from "../core/pairModelEstimator";
 import { planSummary, type PlanResult } from "../core/planOptimizer";
 import { gameWinProb, ratingDiffForProb } from "../core/winModel";
 import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareText, todayStamp } from "../io";
-import { availablePlayers, emptyState } from "../store";
+import { addProject, availablePlayers, emptyState, mergePlayers, newProject, recalcRatings, removeProject, updateCurrent, type Project } from "../store";
 import type { PlanMessage, PlanRequest } from "../planWorker";
+import { Sheet } from "./Sheet";
 import { UpdateCard } from "./UpdateCard";
 
-export function SettingsView({ state, update, notify }: ViewProps) {
-  const cfg = state.config;
-  const setCfg = (patch: Partial<EngineConfig>) => update((s) => ({ ...s, config: { ...s.config, ...patch } }));
+export function SettingsView({ state, project, update, updateProject, notify }: ViewProps) {
+  const cfg = project.config;
+  const setCfg = (patch: Partial<EngineConfig>) => updateProject((p) => ({ ...p, config: { ...p.config, ...patch } }));
   const fileRef = useRef<HTMLInputElement>(null);
 
   const recalc = () => {
-    update((s) => {
-      const players = s.players.map((p) => ({ ...p }));
-      recalculateAll(players, s.matches, { kFactor: s.config.elo_k_factor, weakWeight: s.config.pair_weak_weight, gameScale: s.config.game_scale });
-      return { ...s, players };
-    });
-    notify("初期レートと試合結果から、現在のレートを計算し直しました。");
+    update((s) => recalcRatings(s, true));
+    notify("初期レートとこの会の試合結果から、現在のレートを計算し直しました。");
   };
 
   const estimate = () => {
-    const ratings = new Map(state.players.map((p) => [p.name, p.initial_rating]));
-    const e = estimatePairModel(state.matches, ratings);
+    const ratings = new Map(state.db.map((p) => [p.name, p.initial_rating]));
+    const e = estimatePairModel(project.matches, ratings);
     if (!e) {
       notify("推定に使える試合がありません。ゲーム数の入った結果が必要です。");
       return;
@@ -41,20 +37,40 @@ export function SettingsView({ state, update, notify }: ViewProps) {
     try {
       const imp = parseImport(await file.text());
       if (imp.kind === "bundle") {
-        if (!confirm("いまのデータをすべて置き換えます。よろしいですか？")) return;
-        update(() => imp.state);
-        notify(`読み込みました（${imp.state.players.length} 人・${imp.state.matches.length} 試合）。`);
+        const same = state.projects.find((p) => p.name === imp.project.name);
+        if (same) {
+          if (!confirm(`「${same.name}」はすでにあります。読み込んだ内容で置き換えますか？`)) return;
+          update((s) => {
+            const merged = mergePlayers(s, imp.players);
+            const replaced: Project = { ...imp.project, id: same.id };
+            return { ...merged, projects: merged.projects.map((p) => (p.id === same.id ? replaced : p)), current: same.id };
+          });
+        } else {
+          update((s) => addProject(mergePlayers(s, imp.players), imp.project));
+        }
+        notify(`「${imp.project.name}」を読み込みました（参加者 ${imp.project.members.length} 人・${imp.project.matches.length} 試合）。`);
       } else if (imp.kind === "players") {
+        // players.json はデスクトップ版のプロジェクトのメンバー。データベースに足し、この会の参加者にする
         update((s) => {
-          const byName = new Map(s.players.map((p) => [p.name, p]));
-          for (const p of imp.players) byName.set(p.name, { ...(byName.get(p.name) ?? p), ...p });
-          const players = [...byName.values()];
-          return { ...s, players, selected: players.filter((p) => p.active).map((p) => p.name) };
+          const merged = mergePlayers(s, imp.players);
+          return updateCurrent(merged, (p) => {
+            const names = imp.players.filter((x) => x.active).map((x) => x.name);
+            const members = [...new Set([...p.members, ...names])];
+            const selected = [...new Set([...p.selected, ...names])];
+            return { ...p, members, selected };
+          });
         });
-        notify(`${imp.players.length} 人を読み込みました。`);
+        notify(`${imp.players.length} 人を読み込み、「${project.name}」の参加者にしました。`);
       } else {
-        if (state.matches.length > 0 && !confirm("いまの試合をすべて置き換えます。よろしいですか？")) return;
-        update((s) => ({ ...s, matches: imp.matches }));
+        if (project.matches.length > 0 && !confirm(`「${project.name}」の試合をすべて置き換えます。よろしいですか？`)) return;
+        // 試合に出ている人がデータベースにいなければ、名前だけ登録して参加者にする
+        update((s) => {
+          const known = new Set(s.db.map((p) => p.name));
+          const names = [...new Set(imp.matches.flatMap((m) => [...m.team_a, ...m.team_b]))];
+          const missing = names.filter((n) => !known.has(n));
+          const merged = missing.length ? mergePlayers(s, missing.map((n) => ({ name: n, rating: 1500, initial_rating: 1500, team: null, active: true }))) : s;
+          return recalcRatings(updateCurrent(merged, (p) => ({ ...p, matches: imp.matches, members: [...new Set([...p.members, ...names])], selected: [...new Set([...p.selected, ...missing])] })));
+        });
         notify(`${imp.matches.length} 試合を読み込みました。`);
       }
     } catch (e) {
@@ -63,8 +79,8 @@ export function SettingsView({ state, update, notify }: ViewProps) {
   };
 
   const exportAll = async () => {
-    const name = `${state.name}_${todayStamp()}.json`;
-    const text = bundleJson(state);
+    const name = `${project.name}_${todayStamp()}.json`;
+    const text = bundleJson(state, project);
     if (await shareText(name, text)) return;
     downloadText(name, text);
   };
@@ -78,6 +94,8 @@ export function SettingsView({ state, update, notify }: ViewProps) {
         <h1>設定</h1>
       </div>
 
+      <ProjectCard state={state} project={project} update={update} updateProject={updateProject} notify={notify} />
+
       <div class="card stack">
         <h2>試合の組み方</h2>
         <div>
@@ -87,11 +105,11 @@ export function SettingsView({ state, update, notify }: ViewProps) {
           </div>
         </div>
         <label class="check">
-          <input type="checkbox" checked={state.settings.rating_match} onChange={(e) => update((s) => ({ ...s, settings: { ...s.settings, rating_match: (e.target as HTMLInputElement).checked } }))} />
+          <input type="checkbox" checked={project.settings.rating_match} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, rating_match: (e.target as HTMLInputElement).checked } }))} />
           レートを見て接戦になるように組む
         </label>
         <label class="check">
-          <input type="checkbox" checked={state.settings.avoid_same_team} onChange={(e) => update((s) => ({ ...s, settings: { ...s.settings, avoid_same_team: (e.target as HTMLInputElement).checked } }))} />
+          <input type="checkbox" checked={project.settings.avoid_same_team} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, avoid_same_team: (e.target as HTMLInputElement).checked } }))} />
           同じ所属の人をペアにしない
         </label>
         <label class="check">
@@ -100,7 +118,7 @@ export function SettingsView({ state, update, notify }: ViewProps) {
         </label>
       </div>
 
-      <PlanCard state={state} update={update} notify={notify} />
+      <PlanCard state={state} project={project} update={update} updateProject={updateProject} notify={notify} />
 
       <details class="card">
         <summary>詳細設定</summary>
@@ -125,29 +143,109 @@ export function SettingsView({ state, update, notify }: ViewProps) {
 
       <div class="card stack">
         <h2>データ</h2>
-        <label>
-          <div class="muted">会の名前（書き出すファイル名に使う）</div>
-          <input type="text" value={state.name} onInput={(e) => update((s) => ({ ...s, name: (e.target as HTMLInputElement).value }))} />
-        </label>
+        <button class="btn primary block" onClick={exportAll}>すべて書き出す</button>
         <div class="row wrap">
-          <button class="btn primary" onClick={exportAll}>すべて書き出す</button>
-          <button class="btn" onClick={() => downloadText("players.json", playersJson(state))}>players.json</button>
-          <button class="btn" onClick={() => downloadText("matches.json", matchesJson(state))}>matches.json</button>
+          <button class="btn grow" onClick={() => downloadText("players.json", playersJson(state, project))}>players.json</button>
+          <button class="btn grow" onClick={() => downloadText("matches.json", matchesJson(project))}>matches.json</button>
         </div>
-        <div class="muted">players.json と matches.json はデスクトップ版のプロジェクトフォルダにそのまま置けます。</div>
+        <div class="muted">「すべて書き出す」は「{project.name}」の参加者・試合・設定にデータベースを添えたもの。players.json（参加者）と matches.json はデスクトップ版のプロジェクトフォルダにそのまま置けます。</div>
         <div class="row wrap">
           <button class="btn" onClick={() => fileRef.current?.click()}>ファイルを読み込む</button>
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) onImport(f); (e.target as HTMLInputElement).value = ""; }} />
         </div>
+        <div class="muted">書き出したファイルは会として読み込まれます。players.json はデータベースに足して「{project.name}」の参加者に、matches.json はこの会の試合になります。</div>
         <div class="row wrap">
-          <button class="btn danger" onClick={() => { if (state.matches.length && confirm("試合をすべて消して新しい日を始めますか？（メンバーは残ります）")) { update((s) => ({ ...s, matches: [] })); notify("試合を消しました。"); } }}>新しい日を始める</button>
-          <button class="btn danger" onClick={() => { if (confirm("メンバーも試合も設定もすべて消します。よろしいですか？")) { update(() => emptyState()); notify("すべて消しました。"); } }}>すべて削除</button>
+          <button class="btn danger" onClick={() => { if (project.matches.length && confirm("試合をすべて消して新しい日を始めますか？（参加者は残ります）")) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>新しい日を始める</button>
+          <button class="btn danger" onClick={() => { if (confirm("データベースもすべての会も消します。よろしいですか？")) { update(() => emptyState()); notify("すべて消しました。"); } }}>すべて削除</button>
         </div>
         <div class="muted">データはこの端末のブラウザにだけ保存されます。会が終わったら書き出しておくと安心です。</div>
       </div>
 
       <UpdateCard />
     </>
+  );
+}
+
+/** 会（プロジェクト）の切り替え・作成・名前の変更・削除。 */
+function ProjectCard({ state, project, update, updateProject, notify }: ViewProps) {
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [inherit, setInherit] = useState(true);
+  const sorted = [...state.projects].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+
+  const create = () => {
+    const name = newName.trim();
+    if (!name) return;
+    if (state.projects.some((p) => p.name === name)) {
+      notify("同じ名前の会があります。");
+      return;
+    }
+    const p = newProject(name, {
+      config: { ...project.config },
+      settings: { ...project.settings },
+      members: inherit ? [...project.members] : [],
+      selected: inherit ? [...project.selected] : [],
+    });
+    update((s) => addProject(s, p));
+    setCreating(false);
+    setNewName("");
+    notify(`「${name}」を作りました。`);
+  };
+
+  const remove = () => {
+    const msg = project.matches.length
+      ? `「${project.name}」を削除しますか？ ${project.matches.length} 試合が消えます（データベースのメンバーは残ります）。`
+      : `「${project.name}」を削除しますか？（データベースのメンバーは残ります）`;
+    if (!confirm(msg)) return;
+    update((s) => removeProject(s, project.id));
+    notify(`「${project.name}」を削除しました。`);
+  };
+
+  return (
+    <div class="card stack">
+      <h2>会</h2>
+      {sorted.length > 1 && (
+        <div>
+          <div class="muted">開く会を選ぶ</div>
+          <select value={project.id} onChange={(e) => update((s) => ({ ...s, current: (e.target as HTMLSelectElement).value }))}>
+            {sorted.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}（参加者 {p.members.length}・{p.matches.length} 試合）</option>
+            ))}
+          </select>
+        </div>
+      )}
+      <label>
+        <div class="muted">会の名前（書き出すファイル名に使う）</div>
+        <input type="text" value={project.name} onInput={(e) => updateProject((p) => ({ ...p, name: (e.target as HTMLInputElement).value }))} />
+      </label>
+      <div class="row wrap">
+        <button class="btn" onClick={() => setCreating(true)}>新しい会を作る</button>
+        <button class="btn danger" onClick={remove}>この会を削除</button>
+      </div>
+      <div class="muted">参加者・試合・設定は会ごと。メンバーのデータベースは全部の会で共通です。</div>
+
+      {creating && (
+        <Sheet title="新しい会" onClose={() => setCreating(false)}>
+          <div class="stack">
+            <label>
+              <div class="muted">名前</div>
+              <input type="text" placeholder="例: 2026年度春秋杯" value={newName} onInput={(e) => setNewName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && create()} />
+            </label>
+            <label class="check">
+              <input type="checkbox" checked={inherit} onChange={(e) => setInherit((e.target as HTMLInputElement).checked)} />
+              <span>
+                「{project.name}」の参加者を引き継ぐ
+                <div class="muted">設定はいつも引き継ぎます。試合は引き継ぎません</div>
+              </span>
+            </label>
+            <div class="row" style="justify-content:flex-end">
+              <button class="btn" onClick={() => setCreating(false)}>キャンセル</button>
+              <button class="btn primary" onClick={create} disabled={!newName.trim()}>作る</button>
+            </div>
+          </div>
+        </Sheet>
+      )}
+    </div>
   );
 }
 
@@ -161,8 +259,8 @@ function NumberField(props: { label: string; value: number; min: number; max: nu
   );
 }
 
-function PlanCard({ state, update, notify }: ViewProps) {
-  const available = availablePlayers(state);
+function PlanCard({ state, project, updateProject, notify }: ViewProps) {
+  const available = availablePlayers(state, project);
   const [count, setCount] = useState(Math.max(1, Math.round(available.length * 1.5)));
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -173,7 +271,7 @@ function PlanCard({ state, update, notify }: ViewProps) {
 
   const start = () => {
     if (available.length < 4) {
-      notify("出場できる人が 4 人未満です。");
+      notify("試合に入れる人が 4 人未満です。");
       return;
     }
     const w = new Worker(new URL("../planWorker.ts", import.meta.url), { type: "module" });
@@ -197,7 +295,7 @@ function PlanCard({ state, update, notify }: ViewProps) {
       w.terminate();
       workerRef.current = null;
     };
-    const req: PlanRequest = { players: available, past: state.matches, nMatches: count, config: state.config };
+    const req: PlanRequest = { players: available, past: project.matches, nMatches: count, config: project.config };
     w.postMessage(req);
   };
 
@@ -210,7 +308,7 @@ function PlanCard({ state, update, notify }: ViewProps) {
   const adopt = () => {
     if (!result) return;
     const matches = result.matches.map(([a, b]) => newMatch(a, b));
-    update((s) => ({ ...s, matches: [...s.matches, ...matches] }));
+    updateProject((p) => ({ ...p, matches: [...p.matches, ...matches] }));
     notify(`${matches.length} 試合を追加しました。`);
     setResult(null);
   };
@@ -220,7 +318,7 @@ function PlanCard({ state, update, notify }: ViewProps) {
       <h2>まとめて組む</h2>
       <div class="muted">参加者が決まっている会向け。一日分の組み合わせをまとめて最適化します（数十秒かかります）。1 試合ずつ組む方法と併用できます。</div>
       <div class="row">
-        <span class="grow">作る試合数（出場できる人 {available.length} 人）</span>
+        <span class="grow">作る試合数（試合に入れる人 {available.length} 人）</span>
         <input type="number" style="width:88px" inputMode="numeric" min={1} max={200} value={count} onChange={(e) => setCount(Math.max(1, Math.min(200, Math.trunc(Number((e.target as HTMLInputElement).value)) || 1)))} />
       </div>
       {!running && !result && <button class="btn block" onClick={start} disabled={available.length < 4}>組み合わせを探す</button>}
@@ -233,7 +331,7 @@ function PlanCard({ state, update, notify }: ViewProps) {
       {result && (
         <>
           <div style="white-space:pre-line">{planSummary({ ...result, matches: new Array(result.matches.length) as never })}</div>
-          {result.courts !== state.config.courts && <div class="muted">※ 出場できる人が {available.length} 人のため、同時に使えるのは {result.courts} 面までです。</div>}
+          {result.courts !== project.config.courts && <div class="muted">※ 試合に入れる人が {available.length} 人のため、同時に使えるのは {result.courts} 面までです。</div>}
           <div class="row">
             <button class="btn grow" onClick={() => setResult(null)}>やめる</button>
             <button class="btn primary grow" onClick={adopt}>この内容で追加</button>
