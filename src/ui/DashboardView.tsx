@@ -9,7 +9,7 @@ export function DashboardView({ state }: ViewProps) {
   const [seg, setSeg] = useState<Seg>("people");
   const d = useMemo(() => buildDashboard(activePlayers(state), state.matches, state.config), [state]);
 
-  if (d.people.rows.length === 0) return <div class="empty">出席している人がいません。</div>;
+  if (d.people.rows.length === 0) return <div class="empty">参加している人がいません。メンバータブで選んでください。</div>;
 
   return (
     <>
@@ -34,13 +34,13 @@ export function DashboardView({ state }: ViewProps) {
       {seg === "people" && (
         <div class="card">
           <div class="muted" style="margin-bottom:6px">
-            出場回数の少ない順。色付きは注意（連続待ちが {d.people.meta.wait_cap} ラウンド以上、出場が最少で差が大きい、大差続き）。
+            出場回数の少ない順。色付きの欄は要注意（連続待ちが {d.people.meta.wait_cap} ラウンド以上、出場回数が最少で差が大きい、大差の試合が続いている）。
           </div>
           <div class="tablewrap">
             <table>
               <thead>
                 <tr>
-                  <th class="name">名前</th><th>出場</th><th>連続待ち</th><th>最長待ち</th><th>大差</th><th>同席人数</th><th>未同席</th><th>再同席</th>
+                  <th class="name">名前</th><th>出場</th><th>連続待ち</th><th>最長待ち</th><th>大差</th><th title="同席したことのある人数">同席</th><th title="まだ同席していない人数">未同席</th><th title="2 ラウンド以内に再び同席した回数">再同席</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,7 +103,7 @@ export function DashboardView({ state }: ViewProps) {
             <span><i style="background:var(--danger)"></i>負け</span>
             <span><i style="background:var(--warning)"></i>引き分け</span>
             <span><i style="background:var(--accent)"></i>結果未入力</span>
-            <span>空欄は待ち</span>
+            <span>空欄は待ち番</span>
           </div>
           <div class="tablewrap">
             <table>
@@ -130,7 +130,7 @@ export function DashboardView({ state }: ViewProps) {
 
       {seg === "ranking" && (
         <div class="card">
-          <div class="muted" style="margin-bottom:6px">勝率、得失点差、勝数の順。</div>
+          <div class="muted" style="margin-bottom:6px">勝率、得失ゲーム差、勝数の順に並べています。</div>
           <div class="tablewrap">
             <table>
               <thead>

@@ -6,6 +6,7 @@ import { pairingToMatch, type Match, type MatchPairing, type MatchResult } from 
 import { gameWinProb, pairStrength } from "../core/winModel";
 import { availablePlayers, type AppState } from "../store";
 import { Sheet } from "./Sheet";
+import { Wheel, type WheelOption } from "./Wheel";
 
 interface Proposal {
   pairings: MatchPairing[];
@@ -23,7 +24,7 @@ export function MatchesView({ state, update, notify }: ViewProps) {
 
   const propose = () => {
     if (available.length < 4) {
-      notify("出場候補が 4 人未満です。出席タブで選んでください。");
+      notify("出場できる人が 4 人未満です。メンバータブで参加する人を選んでください。");
       return;
     }
     const engine = new GoodDayEngine(available, state.matches, {
@@ -34,7 +35,7 @@ export function MatchesView({ state, update, notify }: ViewProps) {
     });
     const pairings = engine.generateMatches(state.settings.rating_match, state.settings.avoid_same_team);
     if (pairings.length === 0) {
-      notify("現在の条件では試合を作成できませんでした。");
+      notify("この条件では試合を組めませんでした。");
       setProposal(null);
       return;
     }
@@ -57,7 +58,7 @@ export function MatchesView({ state, update, notify }: ViewProps) {
         <div>
           <h1>試合</h1>
           <div class="sub">
-            候補 {available.length} 人・コート {courts} 面{inPlay > 0 && `・進行中 ${inPlay}`}
+            出場できる人 {available.length} 人・コート {courts} 面{inPlay > 0 && `・進行中 ${inPlay}`}
           </div>
         </div>
         <button class="btn primary" onClick={propose} disabled={available.length < 4}>次の試合を組む</button>
@@ -69,12 +70,12 @@ export function MatchesView({ state, update, notify }: ViewProps) {
           <div class="team">{current[0][0].name}・{current[0][1].name}</div>
           <div class="vs">vs</div>
           <div class="team">{current[1][0].name}・{current[1][1].name}</div>
-          {prob !== null && state.settings.rating_match && <div class="prob">A 側の 1 ゲーム勝率 {Math.round(prob * 100)}%</div>}
+          {prob !== null && state.settings.rating_match && <div class="prob">上のペアが 1 ゲームを取る確率 {Math.round(prob * 100)}%</div>}
           <div class="muted" style="margin-top:4px">{proposal.explains[proposal.index]}</div>
           <div class="row" style="margin-top:12px; justify-content:center">
-            <button class="btn" onClick={() => setProposal(null)}>やめる</button>
+            <button class="btn" onClick={() => setProposal(null)}>閉じる</button>
             <button class="btn" onClick={() => setProposal({ ...proposal, index: (proposal.index + 1) % proposal.pairings.length })} disabled={proposal.pairings.length < 2}>別の案</button>
-            <button class="btn primary" onClick={adopt}>この組み合わせで</button>
+            <button class="btn primary" onClick={adopt}>この組み合わせにする</button>
           </div>
         </div>
       )}
@@ -102,7 +103,7 @@ export function MatchesView({ state, update, notify }: ViewProps) {
                   ) : m.in_play ? (
                     <span class="pill play">進行中</span>
                   ) : (
-                    <span class="pill">未</span>
+                    <span class="pill">未入力</span>
                   )}
                 </div>
               </div>
@@ -122,17 +123,20 @@ function winProb(p: MatchPairing, s: AppState): number {
   return gameWinProb(sa, sb, s.config.game_scale);
 }
 
+/** ゲーム数の選択肢。先頭は「未入力」 */
+const GAME_OPTIONS: WheelOption<number | null>[] = [{ value: null, label: "－" }, ...Array.from({ length: 10 }, (_, i) => ({ value: i, label: String(i) }))];
+
 function ResultSheet({ match, state, update, onClose }: ViewProps & { match: Match; onClose: () => void }) {
-  const [ga, setGa] = useState(match.games_a === null ? "" : String(match.games_a));
-  const [gb, setGb] = useState(match.games_b === null ? "" : String(match.games_b));
+  const [ga, setGa] = useState<number | null>(match.games_a);
+  const [gb, setGb] = useState<number | null>(match.games_b);
   const [inPlay, setInPlay] = useState(match.in_play);
   const no = state.matches.findIndex((m) => m.id === match.id) + 1;
 
   const save = () => {
-    const a = ga.trim() === "" ? null : Math.max(0, Math.trunc(Number(ga)));
-    const b = gb.trim() === "" ? null : Math.max(0, Math.trunc(Number(gb)));
-    const both = a !== null && b !== null && Number.isFinite(a) && Number.isFinite(b);
-    const result: MatchResult = both ? (a! > b! ? "A" : a! < b! ? "B" : "D") : null;
+    const a = ga;
+    const b = gb;
+    const both = a !== null && b !== null;
+    const result: MatchResult = both ? (a > b ? "A" : a < b ? "B" : "D") : null;
     update((s) => {
       const matches: Match[] = s.matches.map((m) =>
         m.id === match.id
@@ -161,11 +165,6 @@ function ResultSheet({ match, state, update, onClose }: ViewProps & { match: Mat
     onClose();
   };
 
-  const quick = (x: number, y: number) => {
-    setGa(String(x));
-    setGb(String(y));
-  };
-
   return (
     <Sheet title={`試合 ${no} の結果`} onClose={onClose}>
       <div class="stack">
@@ -173,23 +172,18 @@ function ResultSheet({ match, state, update, onClose }: ViewProps & { match: Mat
           <div class="who">{match.team_a.join("・")}</div>
           <div class="muted">vs</div>
           <div class="who">{match.team_b.join("・")}</div>
-          <input type="number" inputMode="numeric" min="0" value={ga} onInput={(e) => setGa((e.target as HTMLInputElement).value)} />
+          <Wheel class="score" options={GAME_OPTIONS} value={ga} onChange={setGa} />
           <div class="muted">-</div>
-          <input type="number" inputMode="numeric" min="0" value={gb} onInput={(e) => setGb((e.target as HTMLInputElement).value)} />
-        </div>
-        <div class="quick">
-          {[[4, 0], [4, 1], [4, 2], [4, 3], [0, 4], [1, 4], [2, 4], [3, 4]].map(([x, y]) => (
-            <button class="btn small" key={`${x}-${y}`} onClick={() => quick(x, y)}>{x} - {y}</button>
-          ))}
+          <Wheel class="score" options={GAME_OPTIONS} value={gb} onChange={setGb} />
         </div>
         <label class="check">
           <input type="checkbox" checked={inPlay} onChange={(e) => setInPlay((e.target as HTMLInputElement).checked)} />
-          進行中（この 4 人は次の組み合わせに入れない）
+          進行中（この 4 人は次の試合に入れない）
         </label>
         <div class="row between">
           <button class="btn danger" onClick={remove}>削除</button>
           <div class="row">
-            <button class="btn" onClick={() => { setGa(""); setGb(""); }}>クリア</button>
+            <button class="btn" onClick={() => { setGa(null); setGb(null); }}>結果を消す</button>
             <button class="btn primary" onClick={save}>保存</button>
           </div>
         </div>

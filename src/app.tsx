@@ -5,6 +5,8 @@ import { MatchesView } from "./ui/MatchesView";
 import { DashboardView } from "./ui/DashboardView";
 import { SettingsView } from "./ui/SettingsView";
 import { UpdateBanner } from "./ui/UpdateCard";
+import { DashboardIcon, MatchesIcon, MembersIcon, SettingsIcon } from "./ui/icons";
+import type { ComponentType } from "preact";
 
 export type Tab = "attendance" | "matches" | "dashboard" | "settings";
 export type Update = (fn: (s: AppState) => AppState) => void;
@@ -16,11 +18,11 @@ export interface ViewProps {
   notify: Notify;
 }
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: "attendance", label: "出席", icon: "👥" },
-  { key: "matches", label: "試合", icon: "🎾" },
-  { key: "dashboard", label: "集計", icon: "📊" },
-  { key: "settings", label: "設定", icon: "⚙️" },
+const TABS: { key: Tab; label: string; icon: ComponentType }[] = [
+  { key: "attendance", label: "メンバー", icon: MembersIcon },
+  { key: "matches", label: "試合", icon: MatchesIcon },
+  { key: "dashboard", label: "集計", icon: DashboardIcon },
+  { key: "settings", label: "設定", icon: SettingsIcon },
 ];
 
 export function App() {
@@ -56,7 +58,7 @@ export function App() {
       <nav class="nav">
         {TABS.map((t) => (
           <button key={t.key} class={tab === t.key ? "on" : ""} onClick={() => setTab(t.key)}>
-            <span class="ico">{t.icon}</span>
+            <span class="ico"><t.icon /></span>
             {t.label}
           </button>
         ))}

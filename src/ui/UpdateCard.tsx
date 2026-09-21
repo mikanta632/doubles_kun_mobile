@@ -25,14 +25,14 @@ export function UpdateCard(props: { autoCheck?: boolean }) {
   let message: string;
   if (check === null) message = busy ? "確認しています…" : "";
   else if (check.status === "latest") message = "最新版です。";
-  else if (check.status === "newer") message = `新しい版があります: ${describe(check.latest)}`;
+  else if (check.status === "newer") message = `新しいバージョンがあります: ${describe(check.latest)}`;
   else if (check.status === "offline") message = "オフラインのため確認できません。";
   else message = `確認できませんでした（${check.reason}）。`;
 
   return (
     <div class="card stack">
       <h2>このアプリ</h2>
-      <div class="muted">いまの版: {describe(BUILD)}</div>
+      <div class="muted">現在のバージョン: {describe(BUILD)}</div>
       {message && <div class={check?.status === "newer" ? "" : "muted"}>{message}</div>}
       <div class="row wrap">
         <button class="btn" onClick={run} disabled={busy || applying}>更新を確認</button>
@@ -43,7 +43,7 @@ export function UpdateCard(props: { autoCheck?: boolean }) {
         )}
       </div>
       <div class="muted">
-        GitHub Pages に配信されている最新の版と比べます。更新してもデータは消えません。
+        公開されている最新のバージョンと比べます。更新してもデータは消えません。
         <br />
         <a href="https://github.com/mikanta632/doubles_kun_mobile" target="_blank" rel="noopener">ソースコード（GitHub）</a>
       </div>
@@ -70,7 +70,7 @@ export function UpdateBanner() {
   if (latest === null || dismissed) return null;
   return (
     <div class="banner">
-      <span class="grow">新しい版があります（{latest}）</span>
+      <span class="grow">新しいバージョンがあります（{latest}）</span>
       <button class="btn small primary" disabled={applying} onClick={() => { setApplying(true); void applyUpdate(); }}>
         {applying ? "更新中…" : "更新"}
       </button>

@@ -23,14 +23,14 @@ export function SettingsView({ state, update, notify }: ViewProps) {
       recalculateAll(players, s.matches, { kFactor: s.config.elo_k_factor, weakWeight: s.config.pair_weak_weight, gameScale: s.config.game_scale });
       return { ...s, players };
     });
-    notify("初期レートと試合結果から現在レートを計算し直しました。");
+    notify("初期レートと試合結果から、現在のレートを計算し直しました。");
   };
 
   const estimate = () => {
     const ratings = new Map(state.players.map((p) => [p.name, p.initial_rating]));
     const e = estimatePairModel(state.matches, ratings);
     if (!e) {
-      notify("推定に使える試合がありません（ゲーム数の入った結果が必要です）。");
+      notify("推定に使える試合がありません。ゲーム数の入った結果が必要です。");
       return;
     }
     alert(estimateSummary(e));
@@ -79,7 +79,7 @@ export function SettingsView({ state, update, notify }: ViewProps) {
       </div>
 
       <div class="card stack">
-        <h2>試合の条件</h2>
+        <h2>試合の組み方</h2>
         <div>
           <div class="muted">コート数</div>
           <div class="seg">
@@ -103,13 +103,13 @@ export function SettingsView({ state, update, notify }: ViewProps) {
       <PlanCard state={state} update={update} notify={notify} />
 
       <details class="card">
-        <summary>細かい設定</summary>
+        <summary>詳細設定</summary>
         <div class="stack" style="margin-top:8px">
           <NumberField label="接戦とみなす 1 ゲーム勝率の下限（%）" value={band} min={20} max={50} onChange={(v) => setCfg({ day_win_prob_min: v / 100 })} />
           <div class="muted">レート差 200 なら {Math.round(gameWinProb(200, 0, cfg.game_scale) * 100)}%。接戦の幅に収まるペア強度の差は ±{Math.round(allow)}。</div>
           <NumberField label="連続待ちの上限（ラウンド。0 は自動）" value={cfg.day_wait_cap} min={0} max={12} onChange={(v) => setCfg({ day_wait_cap: v })} />
-          <NumberField label="自動のときの余裕" value={cfg.day_wait_slack} min={0} max={4} onChange={(v) => setCfg({ day_wait_slack: v })} />
-          <NumberField label="出場回数の余裕" value={cfg.day_play_slack} min={0} max={2} onChange={(v) => setCfg({ day_play_slack: v })} />
+          <NumberField label="上限が自動のときの余裕（ラウンド）" value={cfg.day_wait_slack} min={0} max={4} onChange={(v) => setCfg({ day_wait_slack: v })} />
+          <NumberField label="出場回数の差の許容（回）" value={cfg.day_play_slack} min={0} max={2} onChange={(v) => setCfg({ day_play_slack: v })} />
           <NumberField label="再同席を避けるラウンド数" value={cfg.day_recent_rounds} min={0} max={5} onChange={(v) => setCfg({ day_recent_rounds: v })} />
           <NumberField label="同席回数の上限（均等な回数に足す分）" value={cfg.day_dyad_slack} min={1} max={5} onChange={(v) => setCfg({ day_dyad_slack: v })} />
           <NumberField label="1 ゲームのレートスケール" value={cfg.game_scale} min={100} max={3000} step={50} onChange={(v) => setCfg({ game_scale: v })} />
@@ -118,7 +118,7 @@ export function SettingsView({ state, update, notify }: ViewProps) {
           <div class="row wrap">
             <button class="btn small" onClick={estimate}>試合結果から p を推定</button>
             <button class="btn small" onClick={recalc}>レートを再計算</button>
-            <button class="btn small" onClick={() => { if (confirm("細かい設定を既定値に戻しますか？")) setCfg({ ...DEFAULT_CONFIG, courts: cfg.courts, elo_auto_update: cfg.elo_auto_update }); }}>既定値に戻す</button>
+            <button class="btn small" onClick={() => { if (confirm("詳細設定を既定値に戻しますか？")) setCfg({ ...DEFAULT_CONFIG, courts: cfg.courts, elo_auto_update: cfg.elo_auto_update }); }}>既定値に戻す</button>
           </div>
         </div>
       </details>
@@ -130,7 +130,7 @@ export function SettingsView({ state, update, notify }: ViewProps) {
           <input type="text" value={state.name} onInput={(e) => update((s) => ({ ...s, name: (e.target as HTMLInputElement).value }))} />
         </label>
         <div class="row wrap">
-          <button class="btn primary" onClick={exportAll}>まとめて書き出す</button>
+          <button class="btn primary" onClick={exportAll}>すべて書き出す</button>
           <button class="btn" onClick={() => downloadText("players.json", playersJson(state))}>players.json</button>
           <button class="btn" onClick={() => downloadText("matches.json", matchesJson(state))}>matches.json</button>
         </div>
@@ -140,8 +140,8 @@ export function SettingsView({ state, update, notify }: ViewProps) {
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) onImport(f); (e.target as HTMLInputElement).value = ""; }} />
         </div>
         <div class="row wrap">
-          <button class="btn danger" onClick={() => { if (state.matches.length && confirm("試合をすべて消して新しい日を始めますか？（プレイヤーは残ります）")) { update((s) => ({ ...s, matches: [] })); notify("試合を消しました。"); } }}>新しい日を始める</button>
-          <button class="btn danger" onClick={() => { if (confirm("プレイヤーも試合も設定もすべて消します。よろしいですか？")) { update(() => emptyState()); notify("すべて消しました。"); } }}>全データ削除</button>
+          <button class="btn danger" onClick={() => { if (state.matches.length && confirm("試合をすべて消して新しい日を始めますか？（メンバーは残ります）")) { update((s) => ({ ...s, matches: [] })); notify("試合を消しました。"); } }}>新しい日を始める</button>
+          <button class="btn danger" onClick={() => { if (confirm("メンバーも試合も設定もすべて消します。よろしいですか？")) { update(() => emptyState()); notify("すべて消しました。"); } }}>すべて削除</button>
         </div>
         <div class="muted">データはこの端末のブラウザにだけ保存されます。会が終わったら書き出しておくと安心です。</div>
       </div>
@@ -173,7 +173,7 @@ function PlanCard({ state, update, notify }: ViewProps) {
 
   const start = () => {
     if (available.length < 4) {
-      notify("出場候補が 4 人未満です。");
+      notify("出場できる人が 4 人未満です。");
       return;
     }
     const w = new Worker(new URL("../planWorker.ts", import.meta.url), { type: "module" });
@@ -218,9 +218,9 @@ function PlanCard({ state, update, notify }: ViewProps) {
   return (
     <div class="card stack">
       <h2>まとめて組む</h2>
-      <div class="muted">参加者が固まっている会向け。一日分を先を見通して最適化します（数十秒かかります）。1 試合ずつ組むのと併用できます。</div>
+      <div class="muted">参加者が決まっている会向け。一日分の組み合わせをまとめて最適化します（数十秒かかります）。1 試合ずつ組む方法と併用できます。</div>
       <div class="row">
-        <span class="grow">作成する試合数（候補 {available.length} 人）</span>
+        <span class="grow">作る試合数（出場できる人 {available.length} 人）</span>
         <input type="number" style="width:88px" inputMode="numeric" min={1} max={200} value={count} onChange={(e) => setCount(Math.max(1, Math.min(200, Math.trunc(Number((e.target as HTMLInputElement).value)) || 1)))} />
       </div>
       {!running && !result && <button class="btn block" onClick={start} disabled={available.length < 4}>組み合わせを探す</button>}
@@ -233,7 +233,7 @@ function PlanCard({ state, update, notify }: ViewProps) {
       {result && (
         <>
           <div style="white-space:pre-line">{planSummary({ ...result, matches: new Array(result.matches.length) as never })}</div>
-          {result.courts !== state.config.courts && <div class="muted">※ 候補が {available.length} 人のため、同時に使えるのは {result.courts} 面までです。</div>}
+          {result.courts !== state.config.courts && <div class="muted">※ 出場できる人が {available.length} 人のため、同時に使えるのは {result.courts} 面までです。</div>}
           <div class="row">
             <button class="btn grow" onClick={() => setResult(null)}>やめる</button>
             <button class="btn primary grow" onClick={adopt}>この内容で追加</button>
