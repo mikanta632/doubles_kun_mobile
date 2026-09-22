@@ -139,20 +139,30 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
       </details>
 
       <div class="card stack">
-        <h2>データ</h2>
-        <button class="btn primary block" onClick={exportAll}>すべて書き出す</button>
+        <h2>書き出す</h2>
+        <button class="btn primary block" onClick={exportAll}>このプロジェクト（名簿・試合・設定）</button>
         <div class="row wrap">
-          <button class="btn grow" onClick={() => downloadText("players.json", playersJson(state, project))}>players.json</button>
-          <button class="btn grow" onClick={() => downloadText("matches.json", matchesJson(project))}>matches.json</button>
+          <button class="btn grow" onClick={() => downloadText("players.json", playersJson(state, project))}>名簿だけ players.json</button>
+          <button class="btn grow" onClick={() => downloadText("matches.json", matchesJson(project))}>試合だけ matches.json</button>
         </div>
-        <div class="row wrap">
-          <button class="btn" onClick={() => fileRef.current?.click()}>ファイルを読み込む</button>
-          <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) onImport(f); (e.target as HTMLInputElement).value = ""; }} />
-        </div>
-        <div class="row wrap">
-          <button class="btn danger" onClick={() => { if (project.matches.length && confirm("試合をすべて消して新しい日を始めますか？（名簿は残ります）")) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>新しい日を始める</button>
-          <button class="btn danger" onClick={() => { if (confirm("データベースもすべてのプロジェクトも消します。よろしいですか？")) { update(() => emptyState()); notify("すべて消しました。"); } }}>すべて削除</button>
-        </div>
+      </div>
+
+      <div class="card stack">
+        <h2>読み込む</h2>
+        <button class="btn block" onClick={() => fileRef.current?.click()}>ファイルを選ぶ</button>
+        <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) onImport(f); (e.target as HTMLInputElement).value = ""; }} />
+      </div>
+
+      <div class="card stack">
+        <h2>消す</h2>
+        <button class="btn danger block" disabled={project.matches.length === 0}
+          onClick={() => { if (confirm(`「${project.name}」の試合 ${project.matches.length} 件を消しますか？（名簿は残ります）`)) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>
+          このプロジェクトの試合（{project.matches.length} 件）
+        </button>
+        <button class="btn danger block"
+          onClick={() => { if (confirm(`データベースの ${state.db.length} 人と ${state.projects.length} 件のプロジェクトを、すべて消します。よろしいですか？`)) { update(() => emptyState()); notify("すべて消しました。"); } }}>
+          すべてのデータ
+        </button>
       </div>
 
       <UpdateCard />
