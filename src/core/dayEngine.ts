@@ -193,6 +193,22 @@ function relaxed(c: DayCandidate): string[] {
   return RELAXATION_LADDER[c.level].filter((f) => c.failed.has(f));
 }
 
+/**
+ * 候補が諦めた点を、エンジンの用語を使わずに並べる（重い順）。
+ * 何も諦めていなければ空。画面ではこれが出ていなければ「ふつうの組み合わせ」。
+ */
+export function notesOf(c: DayCandidate): string[] {
+  const r = new Set(relaxed(c));
+  const out: string[] = [];
+  if (r.has("must_include")) out.push("長く待っている人が入らない");
+  if (r.has("slack1") || r.has("slack2")) out.push("出場回数に差がつく");
+  if (r.has("dyad_cap")) out.push("同席が多い組あり");
+  if (r.has("band_strict") || r.has("band_wide")) out.push("実力差あり");
+  if (c.exactRepeat) out.push("同じ組み合わせ");
+  if (c.sameTeam) out.push("同じ所属のペアあり");
+  return out;
+}
+
 function combinations<T>(xs: readonly T[], k: number): T[][] {
   const out: T[][] = [];
   const n = xs.length;
@@ -277,6 +293,17 @@ export class GoodDayEngine {
   }
 
   explain(pairing: MatchPairing): string {
+    const c = this.candidateOf(pairing);
+    return c ? this.explainCandidate(c) : "";
+  }
+
+  /** この組み合わせで諦めた点を、ふつうの言葉で返す。何もなければ空。 */
+  notes(pairing: MatchPairing): string[] {
+    const c = this.candidateOf(pairing);
+    return c ? notesOf(c) : [];
+  }
+
+  private candidateOf(pairing: MatchPairing): DayCandidate | null {
     const [[a1, a2], [b1, b2]] = pairing;
     const four = new Set([a1.name, a2.name, b1.name, b2.name]);
     const teams = new Set([pairKey(a1.name, a2.name), pairKey(b1.name, b2.name)]);
@@ -284,9 +311,9 @@ export class GoodDayEngine {
       if (!setEq(c.four, four)) continue;
       const [[x1, x2], [y1, y2]] = c.match;
       const t = new Set([pairKey(x1.name, x2.name), pairKey(y1.name, y2.name)]);
-      if (setEq(t, teams)) return this.explainCandidate(c);
+      if (setEq(t, teams)) return c;
     }
-    return "";
+    return null;
   }
 
   rank(ratingMatchOn: boolean, avoidSameTeamOn: boolean, allowOldPairs: boolean): DayCandidate[] {

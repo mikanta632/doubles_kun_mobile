@@ -127,6 +127,7 @@ label.check input { width: 22px; height: 22px; }
 }
 .pill.on { background: var(--accent-soft); color: var(--accent); }
 .pill.play { background: var(--bad-bg); color: var(--danger); }
+.pill.warn { background: var(--warn-bg); color: #92400e; }
 
 .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); }
 .seg button { flex: 1; border: 0; background: transparent; padding: 8px 4px; min-height: 40px; color: var(--muted); font-size: 13px; }
@@ -138,6 +139,7 @@ label.check input { width: 22px; height: 22px; }
 .proposal .side .team { grid-column: 2; font-size: 20px; font-weight: 700; }
 .proposal .side .pct { grid-column: 3; text-align: right; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .proposal .vs { color: var(--muted); margin: 4px 0; }
+.proposal .notes { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
 
 .match { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .match:last-child { border-bottom: 0; }

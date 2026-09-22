@@ -9,6 +9,8 @@ import { Wheel, type WheelOption } from "./Wheel";
 
 interface Proposal {
   pairings: MatchPairing[];
+  /** 組み合わせごとに諦めた点（あれば画面に出す） */
+  notes: string[][];
   index: number;
 }
 
@@ -37,7 +39,7 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
       setProposal(null);
       return;
     }
-    setProposal({ pairings, index: 0 });
+    setProposal({ pairings, notes: pairings.map((p) => engine.notes(p)), index: 0 });
   };
 
   const adopt = () => {
@@ -93,6 +95,11 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
             <span class="team">{current[1][0].name}・{current[1][1].name}</span>
             {showProb && <span class="pct">{Math.round((1 - prob!) * 100)}%</span>}
           </div>
+          {proposal.notes[proposal.index].length > 0 && (
+            <div class="notes">
+              {proposal.notes[proposal.index].slice(0, 2).map((n) => <span class="pill warn" key={n}>{n}</span>)}
+            </div>
+          )}
           <div class="row" style="margin-top:12px; justify-content:center">
             <button class="btn" onClick={() => setProposal(null)}>閉じる</button>
             <button class="btn" onClick={() => setProposal({ ...proposal, index: (proposal.index + 1) % proposal.pairings.length })} disabled={proposal.pairings.length < 2}>別の案</button>
