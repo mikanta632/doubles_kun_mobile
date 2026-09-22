@@ -133,9 +133,11 @@ label.check input { width: 22px; height: 22px; }
 .seg button.on { background: var(--accent); color: #fff; font-weight: 600; }
 
 .proposal { text-align: center; }
-.proposal .team { font-size: 20px; font-weight: 700; }
+/* 名前を中央に置いたまま、勝率を右にそろえる */
+.proposal .side { display: grid; grid-template-columns: 44px 1fr 44px; align-items: baseline; }
+.proposal .side .team { grid-column: 2; font-size: 20px; font-weight: 700; }
+.proposal .side .pct { grid-column: 3; text-align: right; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .proposal .vs { color: var(--muted); margin: 4px 0; }
-.proposal .prob { font-size: 13px; color: var(--muted); }
 
 .match { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .match:last-child { border-bottom: 0; }

@@ -9,7 +9,6 @@ import { Wheel, type WheelOption } from "./Wheel";
 
 interface Proposal {
   pairings: MatchPairing[];
-  explains: string[];
   index: number;
 }
 
@@ -38,7 +37,7 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
       setProposal(null);
       return;
     }
-    setProposal({ pairings, explains: pairings.map((p) => engine.explain(p)), index: 0 });
+    setProposal({ pairings, index: 0 });
   };
 
   const adopt = () => {
@@ -58,6 +57,7 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
 
   const current = proposal ? proposal.pairings[proposal.index] : null;
   const prob = current ? winProb(current, project) : null;
+  const showProb = prob !== null && project.settings.rating_match;
 
   // 採用済みの試合の勝率予想（いまのレートで計算）
   const ratings = useMemo(() => new Map(state.db.map((p) => [p.name, p.rating])), [state.db]);
@@ -84,11 +84,15 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
       {current && proposal && (
         <div class="card proposal">
           <div class="muted">案 {proposal.index + 1} / {proposal.pairings.length}</div>
-          <div class="team">{current[0][0].name}・{current[0][1].name}</div>
+          <div class="side">
+            <span class="team">{current[0][0].name}・{current[0][1].name}</span>
+            {showProb && <span class="pct">{Math.round(prob! * 100)}%</span>}
+          </div>
           <div class="vs">vs</div>
-          <div class="team">{current[1][0].name}・{current[1][1].name}</div>
-          {prob !== null && project.settings.rating_match && <div class="prob">上のペアが 1 ゲームを取る確率 {Math.round(prob * 100)}%</div>}
-          <div class="muted" style="margin-top:4px">{proposal.explains[proposal.index]}</div>
+          <div class="side">
+            <span class="team">{current[1][0].name}・{current[1][1].name}</span>
+            {showProb && <span class="pct">{Math.round((1 - prob!) * 100)}%</span>}
+          </div>
           <div class="row" style="margin-top:12px; justify-content:center">
             <button class="btn" onClick={() => setProposal(null)}>閉じる</button>
             <button class="btn" onClick={() => setProposal({ ...proposal, index: (proposal.index + 1) % proposal.pairings.length })} disabled={proposal.pairings.length < 2}>別の案</button>
