@@ -34,11 +34,11 @@ button, input, select { font: inherit; }
   margin: 0 auto;
 }
 .brand {
-  display: flex; align-items: center; gap: 6px;
-  font-weight: 700; font-size: 15px; letter-spacing: 0.02em;
-  padding: 2px 0 6px;
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 700; font-size: 21px; letter-spacing: 0.02em;
+  padding: 2px 0 8px;
 }
-.brand svg { display: block; }
+.brand img { display: block; border-radius: 7px; }
 .topbar {
   position: sticky; top: 0; z-index: 5;
   background: var(--bg);

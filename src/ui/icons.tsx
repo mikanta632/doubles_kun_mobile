@@ -2,18 +2,6 @@
 
 const attrs = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": 1.8, "stroke-linecap": "round", "stroke-linejoin": "round" } as const;
 
-/** アプリのしるし。ラケットとボール（アイコンと同じ絵柄） */
-export function AppMark() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <ellipse cx="13.6" cy="9.4" rx="5.1" ry="6.6" transform="rotate(40 13.6 9.4)" fill="var(--accent)" />
-      <path d="M11.4 13.1 4.2 20.3" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" />
-      <path d="M11.5 4.7l5.2 6.6M15.9 3.6l-5.1 6.8" stroke="#fff" stroke-width="1.1" opacity="0.75" />
-      <circle cx="19.2" cy="18.4" r="2.6" fill="var(--warning)" />
-    </svg>
-  );
-}
-
 export function ProjectIcon() {
   return (
     <svg {...attrs}>

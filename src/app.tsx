@@ -6,7 +6,7 @@ import { MatchesView } from "./ui/MatchesView";
 import { DashboardView } from "./ui/DashboardView";
 import { SettingsView } from "./ui/SettingsView";
 import { UpdateBanner } from "./ui/UpdateCard";
-import { AppMark, DashboardIcon, MatchesIcon, MembersIcon, ProjectIcon, SettingsIcon } from "./ui/icons";
+import { DashboardIcon, MatchesIcon, MembersIcon, ProjectIcon, SettingsIcon } from "./ui/icons";
 import type { ComponentType } from "preact";
 
 export type Tab = "project" | "attendance" | "matches" | "dashboard" | "settings";
@@ -62,7 +62,7 @@ export function App() {
     <>
       <div class="screen">
         <div class="brand">
-          <AppMark />
+          <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="" width="30" height="30" />
           <span>ダブルスくん</span>
         </div>
         <UpdateBanner />
