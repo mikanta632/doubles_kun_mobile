@@ -131,12 +131,13 @@ label.check input { width: 22px; height: 22px; }
 .proposal .vs { color: var(--muted); margin: 4px 0; }
 .proposal .prob { font-size: 13px; color: var(--muted); }
 
-.match { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.match { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .match:last-child { border-bottom: 0; }
 .match .no { color: var(--muted); font-size: 12px; text-align: center; }
 .match .teams { line-height: 1.35; }
 .match .teams .win { font-weight: 700; }
 .match .teams .lose { color: var(--muted); }
+.match .prob { color: var(--muted); font-size: 11px; line-height: 1.35; text-align: right; font-variant-numeric: tabular-nums; min-width: 30px; }
 .match .score { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 48px; text-align: center; }
 .match.inplay { background: #fff7f7; }
 /* 長押しで並べ替え。長押し中に文字選択やメニューが出ないようにする */

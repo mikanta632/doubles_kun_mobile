@@ -60,6 +60,16 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
   const current = proposal ? proposal.pairings[proposal.index] : null;
   const prob = current ? winProb(current, project) : null;
 
+  // 採用済みの試合の勝率予想（いまのレートで計算）
+  const ratings = useMemo(() => new Map(state.db.map((p) => [p.name, p.rating])), [state.db]);
+  const probOf = (m: Match): number | null => {
+    if (!project.settings.rating_match || m.team_a.length !== 2 || m.team_b.length !== 2) return null;
+    const r = [...m.team_a, ...m.team_b].map((n) => ratings.get(n));
+    if (r.some((x) => x === undefined)) return null;
+    const [a1, a2, b1, b2] = r as number[];
+    return gameWinProb(pairStrength(a1, a2, project.config.pair_weak_weight), pairStrength(b1, b2, project.config.pair_weak_weight), project.config.game_scale);
+  };
+
   return (
     <>
       <div class="topbar">
@@ -91,7 +101,7 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
       {project.matches.length === 0 ? (
         <div class="empty">試合がありません</div>
       ) : (
-        <MatchList matches={project.matches} courts={courts} onOpen={setEditing} onReorder={reorder} />
+        <MatchList matches={project.matches} courts={courts} probOf={probOf} onOpen={setEditing} onReorder={reorder} />
       )}
 
       {editing && <ResultSheet match={editing} state={state} project={project} update={update} updateProject={updateProject} notify={notify} onClose={() => setEditing(null)} />}
@@ -116,7 +126,7 @@ interface Drag {
  * 試合一覧。新しい順に並べ、コート数ごとにラウンドで区切る（古い方からラウンド 1）。
  * 長押しでその試合をつかみ、そのまま上下に動かして順番を入れ替える。
  */
-function MatchList({ matches, courts, onOpen, onReorder }: { matches: Match[]; courts: number; onOpen: (m: Match) => void; onReorder: (ids: string[]) => void }) {
+function MatchList({ matches, courts, probOf, onOpen, onReorder }: { matches: Match[]; courts: number; probOf: (m: Match) => number | null; onOpen: (m: Match) => void; onReorder: (ids: string[]) => void }) {
   const [dragOrder, setDragOrder] = useState<string[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -285,6 +295,7 @@ function MatchList({ matches, courts, onOpen, onReorder }: { matches: Match[]; c
               <div class={it.m.result === "A" ? "win" : it.m.result === "B" ? "lose" : ""}>{it.m.team_a.join("・")}</div>
               <div class={it.m.result === "B" ? "win" : it.m.result === "A" ? "lose" : ""}>{it.m.team_b.join("・")}</div>
             </div>
+            <ProbCell p={probOf(it.m)} />
             <div class="score">
               {it.m.games_a !== null && it.m.games_b !== null ? (
                 <>{it.m.games_a}<br />{it.m.games_b}</>
@@ -297,6 +308,16 @@ function MatchList({ matches, courts, onOpen, onReorder }: { matches: Match[]; c
           </div>
         ),
       )}
+    </div>
+  );
+}
+
+/** 勝率予想。上段が A、下段が B */
+function ProbCell({ p }: { p: number | null }) {
+  if (p === null) return <div class="prob"></div>;
+  return (
+    <div class="prob">
+      {Math.round(p * 100)}%<br />{Math.round((1 - p) * 100)}%
     </div>
   );
 }
