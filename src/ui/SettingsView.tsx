@@ -9,6 +9,10 @@ import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareT
 import { addProject, availablePlayers, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
 import type { PlanMessage, PlanRequest } from "../planWorker";
 import { UpdateCard } from "./UpdateCard";
+import { Wheel, type WheelOption } from "./Wheel";
+
+/** コート数の選択肢 */
+const COURT_OPTIONS: WheelOption<number>[] = [1, 2, 3].map((n) => ({ value: n, label: `${n} 面` }));
 
 export function SettingsView({ state, project, update, updateProject, notify }: ViewProps) {
   const cfg = project.config;
@@ -95,9 +99,7 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
         <h2>試合の組み方</h2>
         <div>
           <div class="muted">コート数</div>
-          <div class="seg">
-            {[1, 2, 3].map((n) => <button key={n} class={cfg.courts === n ? "on" : ""} onClick={() => setCfg({ courts: n })}>{n} 面</button>)}
-          </div>
+          <Wheel options={COURT_OPTIONS} value={cfg.courts} onChange={(v) => setCfg({ courts: v })} />
         </div>
         <label class="check">
           <input type="checkbox" checked={project.settings.rating_match} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, rating_match: (e.target as HTMLInputElement).checked } }))} />

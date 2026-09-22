@@ -6,14 +6,16 @@ export interface WheelOption<T> {
 }
 
 const ITEM_H = 36;
-const VISIBLE = 5;
-const PAD = ((VISIBLE - 1) / 2) * ITEM_H;
+const MAX_VISIBLE = 5;
 
 /**
  * ドラムロール式の選択。スクロールして止まった位置の項目が選ばれる。
- * 項目をタップしてもそこへ移動する。
+ * 項目をタップしてもそこへ移動する。項目が少なければその分だけ低くする。
  */
 export function Wheel<T>(props: { options: WheelOption<T>[]; value: T; onChange: (v: T) => void; class?: string }) {
+  // 見える行数は奇数にする（中央が選択位置）
+  const visible = Math.min(MAX_VISIBLE, Math.max(1, props.options.length % 2 === 0 ? props.options.length - 1 : props.options.length));
+  const pad = ((visible - 1) / 2) * ITEM_H;
   const ref = useRef<HTMLDivElement>(null);
   const timer = useRef<number | undefined>(undefined);
   const reported = useRef<T | undefined>(undefined);
@@ -53,15 +55,15 @@ export function Wheel<T>(props: { options: WheelOption<T>[]; value: T; onChange:
   const jump = (i: number) => ref.current?.scrollTo({ top: i * ITEM_H, behavior: "smooth" });
 
   return (
-    <div class={"wheel-wrap " + (props.class ?? "")} style={`height:${ITEM_H * VISIBLE}px`}>
-      <div class="wheel" ref={ref} onScroll={onScroll} style={`scroll-padding-top:${PAD}px`}>
-        <div style={`height:${PAD}px`} />
+    <div class={"wheel-wrap " + (props.class ?? "")} style={`height:${ITEM_H * visible}px`}>
+      <div class="wheel" ref={ref} onScroll={onScroll} style={`scroll-padding-top:${pad}px`}>
+        <div style={`height:${pad}px`} />
         {props.options.map((o, i) => (
           <div class={"wheel-item" + (i === index ? " on" : "")} key={i} style={`height:${ITEM_H}px`} onClick={() => jump(i)}>
             {o.label}
           </div>
         ))}
-        <div style={`height:${PAD}px`} />
+        <div style={`height:${pad}px`} />
       </div>
     </div>
   );
