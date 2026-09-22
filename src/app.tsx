@@ -6,7 +6,7 @@ import { MatchesView } from "./ui/MatchesView";
 import { DashboardView } from "./ui/DashboardView";
 import { SettingsView } from "./ui/SettingsView";
 import { UpdateBanner } from "./ui/UpdateCard";
-import { DashboardIcon, MatchesIcon, MembersIcon, ProjectIcon, SettingsIcon } from "./ui/icons";
+import { AppMark, DashboardIcon, MatchesIcon, MembersIcon, ProjectIcon, SettingsIcon } from "./ui/icons";
 import type { ComponentType } from "preact";
 
 export type Tab = "project" | "attendance" | "matches" | "dashboard" | "settings";
@@ -61,6 +61,10 @@ export function App() {
   return (
     <>
       <div class="screen">
+        <div class="brand">
+          <AppMark />
+          <span>ダブルスくん</span>
+        </div>
         <UpdateBanner />
         {tab === "project" && <ProjectView {...props} />}
         {tab === "attendance" && <AttendanceView {...props} onGoProject={() => setTab("project")} />}

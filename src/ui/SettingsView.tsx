@@ -9,10 +9,6 @@ import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareT
 import { addProject, availablePlayers, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
 import type { PlanMessage, PlanRequest } from "../planWorker";
 import { UpdateCard } from "./UpdateCard";
-import { Wheel, type WheelOption } from "./Wheel";
-
-/** コート数の選択肢 */
-const COURT_OPTIONS: WheelOption<number>[] = [1, 2, 3].map((n) => ({ value: n, label: `${n} 面` }));
 
 export function SettingsView({ state, project, update, updateProject, notify }: ViewProps) {
   const cfg = project.config;
@@ -99,7 +95,9 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
         <h2>試合の組み方</h2>
         <div>
           <div class="muted">コート数</div>
-          <Wheel options={COURT_OPTIONS} value={cfg.courts} onChange={(v) => setCfg({ courts: v })} />
+          <div class="seg">
+            {[1, 2, 3].map((n) => <button key={n} class={cfg.courts === n ? "on" : ""} onClick={() => setCfg({ courts: n })}>{n} 面</button>)}
+          </div>
         </div>
         <label class="check">
           <input type="checkbox" checked={project.settings.rating_match} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, rating_match: (e.target as HTMLInputElement).checked } }))} />
@@ -139,7 +137,7 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
       </details>
 
       <div class="card stack">
-        <h2>書き出す</h2>
+        <h2>エクスポート</h2>
         <button class="btn primary block" onClick={exportAll}>このプロジェクト（名簿・試合・設定）</button>
         <div class="row wrap">
           <button class="btn grow" onClick={() => downloadText("players.json", playersJson(state, project))}>名簿だけ players.json</button>
@@ -148,13 +146,13 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
       </div>
 
       <div class="card stack">
-        <h2>読み込む</h2>
+        <h2>インポート</h2>
         <button class="btn block" onClick={() => fileRef.current?.click()}>ファイルを選ぶ</button>
         <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) onImport(f); (e.target as HTMLInputElement).value = ""; }} />
       </div>
 
       <div class="card stack">
-        <h2>消す</h2>
+        <h2>削除</h2>
         <button class="btn danger block" disabled={project.matches.length === 0}
           onClick={() => { if (confirm(`「${project.name}」の試合 ${project.matches.length} 件を消しますか？（名簿は残ります）`)) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>
           このプロジェクトの試合（{project.matches.length} 件）
