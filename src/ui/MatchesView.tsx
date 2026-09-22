@@ -3,7 +3,7 @@ import type { ViewProps } from "../app";
 import { GoodDayEngine } from "../core/dayEngine";
 import { pairingToMatch, type Match, type MatchPairing, type MatchResult } from "../core/models";
 import { gameWinProb, pairStrength } from "../core/winModel";
-import { availablePlayers, recalcRatings, updateCurrent, type Project } from "../store";
+import { availablePlayers, type Project } from "../store";
 import { Sheet } from "./Sheet";
 import { Wheel, type WheelOption } from "./Wheel";
 
@@ -50,11 +50,10 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
 
   /** 並べ替えの確定。順番は Elo の再計算にも効く */
   const reorder = (ids: string[]) =>
-    update((s) => {
-      const byId = new Map(s.projects.find((p) => p.id === project.id)?.matches.map((m) => [m.id, m]) ?? []);
+    updateProject((p) => {
+      const byId = new Map(p.matches.map((m) => [m.id, m]));
       const matches = ids.map((id) => byId.get(id)).filter((m): m is Match => m !== undefined);
-      if (matches.length !== byId.size) return s;
-      return recalcRatings(updateCurrent(s, (p) => ({ ...p, matches })));
+      return matches.length === byId.size ? { ...p, matches } : p;
     });
 
   const current = proposal ? proposal.pairings[proposal.index] : null;
@@ -331,7 +330,7 @@ function winProb(p: MatchPairing, project: Project): number {
 /** ゲーム数の選択肢。先頭は「未入力」 */
 const GAME_OPTIONS: WheelOption<number | null>[] = [{ value: null, label: "－" }, ...Array.from({ length: 10 }, (_, i) => ({ value: i, label: String(i) }))];
 
-function ResultSheet({ match, project, update, onClose }: ViewProps & { match: Match; onClose: () => void }) {
+function ResultSheet({ match, project, updateProject, onClose }: ViewProps & { match: Match; onClose: () => void }) {
   const [ga, setGa] = useState<number | null>(match.games_a);
   const [gb, setGb] = useState<number | null>(match.games_b);
   const [inPlay, setInPlay] = useState(match.in_play);
@@ -342,24 +341,20 @@ function ResultSheet({ match, project, update, onClose }: ViewProps & { match: M
     const b = gb;
     const both = a !== null && b !== null;
     const result: MatchResult = both ? (a > b ? "A" : a < b ? "B" : "D") : null;
-    update((s) =>
-      recalcRatings(
-        updateCurrent(s, (p) => ({
-          ...p,
-          matches: p.matches.map((m) =>
-            m.id === match.id
-              ? { ...m, games_a: both ? a : null, games_b: both ? b : null, result, in_play: both ? false : inPlay, updated_at: Date.now() / 1000 }
-              : m,
-          ),
-        })),
+    updateProject((p) => ({
+      ...p,
+      matches: p.matches.map((m) =>
+        m.id === match.id
+          ? { ...m, games_a: both ? a : null, games_b: both ? b : null, result, in_play: both ? false : inPlay, updated_at: Date.now() / 1000 }
+          : m,
       ),
-    );
+    }));
     onClose();
   };
 
   const remove = () => {
     if (!confirm(`試合 ${no} を削除しますか？`)) return;
-    update((s) => recalcRatings(updateCurrent(s, (p) => ({ ...p, matches: p.matches.filter((m) => m.id !== match.id) }))));
+    updateProject((p) => ({ ...p, matches: p.matches.filter((m) => m.id !== match.id) }));
     onClose();
   };
 

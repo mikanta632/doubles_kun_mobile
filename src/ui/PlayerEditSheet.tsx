@@ -1,7 +1,7 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import type { Player } from "../core/models";
-import { deletePlayer, playedAnywhere, playedIn, recalcRatings, renamePlayer } from "../store";
+import { deletePlayer, playedAnywhere, playedIn, renamePlayer } from "../store";
 import { Sheet } from "./Sheet";
 import { Wheel, type WheelOption } from "./Wheel";
 
@@ -50,7 +50,7 @@ export function PlayerEditSheet({ player, state, project, update, notify, onRemo
       );
       // 休会中にした人は、どのプロジェクトでも試合の候補から外す
       const projects = active ? s.projects : s.projects.map((p) => ({ ...p, selected: p.selected.filter((n) => n !== newName) }));
-      return recalcRatings({ ...s, db, projects });
+      return { ...s, db, projects };
     });
     onClose();
   };

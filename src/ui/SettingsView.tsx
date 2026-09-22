@@ -67,7 +67,7 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
           const names = [...new Set(imp.matches.flatMap((m) => [...m.team_a, ...m.team_b]))];
           const missing = names.filter((n) => !known.has(n));
           const merged = missing.length ? mergePlayers(s, missing.map((n) => ({ name: n, rating: 1500, initial_rating: 1500, team: null, active: true }))) : s;
-          return recalcRatings(updateCurrent(merged, (p) => ({ ...p, matches: imp.matches, members: [...new Set([...p.members, ...names])], selected: [...new Set([...p.selected, ...missing])] })));
+          return updateCurrent(merged, (p) => ({ ...p, matches: imp.matches, members: [...new Set([...p.members, ...names])], selected: [...new Set([...p.selected, ...missing])] }));
         });
         notify(`${imp.matches.length} 試合を読み込みました。`);
       }
