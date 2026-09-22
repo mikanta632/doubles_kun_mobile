@@ -59,9 +59,20 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
 }) {
   const [creating, setCreating] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [query, setQuery] = useState("");
+  const [all, setAll] = useState(false);
   const members = useMemo(() => memberPlayers(state, project), [state, project]);
+
   // 日付の新しい順（未定は最後）。同じ日なら最近触った順
-  const sorted = [...state.projects].sort((a, b) => (b.date || "").localeCompare(a.date || "") || b.updated_at.localeCompare(a.updated_at));
+  const sorted = useMemo(
+    () => [...state.projects].sort((a, b) => (b.date || "").localeCompare(a.date || "") || b.updated_at.localeCompare(a.updated_at)),
+    [state.projects],
+  );
+  const q = query.trim();
+  const found = q ? sorted.filter((p) => p.name.includes(q) || p.place.includes(q) || p.date.includes(q)) : sorted;
+  // 増えてきたら、既定では最近のぶんだけ出す。開いているものは必ず入れる
+  const folded = !q && !all && found.length > RECENT + 2;
+  const shown = folded ? dedupeById([...found.slice(0, RECENT), ...found.filter((p) => p.id === project.id)]) : found;
 
   const remove = () => {
     const msg = project.matches.length
@@ -75,8 +86,11 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
   return (
     <>
       <div class="card">
+        {sorted.length > RECENT + 2 && (
+          <input type="text" placeholder="名前・場所・日付で絞り込み" value={query} onInput={(e) => setQuery((e.target as HTMLInputElement).value)} style="margin-bottom:8px" />
+        )}
         <div class="list">
-          {sorted.map((p) => (
+          {shown.map((p) => (
             <div class={"item" + (p.id === project.id ? " current" : "")} key={p.id} onClick={() => p.id !== project.id && update((s) => ({ ...s, current: p.id }))}>
               <span class="grow">
                 <span style="font-weight:600">{p.name}</span>
@@ -84,7 +98,9 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
               </span>
             </div>
           ))}
+          {shown.length === 0 && <div class="empty">該当なし</div>}
         </div>
+        {folded && <button class="btn block" style="margin-top:8px" onClick={() => setAll(true)}>すべて表示（{found.length} 件）</button>}
         <button class="btn block" style="margin-top:8px" onClick={() => setCreating(true)}>新しいプロジェクト</button>
       </div>
 
@@ -136,6 +152,14 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
       {picking && <RosterPickSheet state={state} project={project} update={update} notify={notify} onClose={() => setPicking(false)} />}
     </>
   );
+}
+
+/** 既定で出すプロジェクトの数 */
+const RECENT = 10;
+
+function dedupeById(ps: Project[]): Project[] {
+  const seen = new Set<string>();
+  return ps.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
 }
 
 function describe(p: Project): string {
