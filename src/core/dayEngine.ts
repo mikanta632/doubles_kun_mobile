@@ -151,6 +151,8 @@ export interface DayCandidate {
   repeatMax: number;
   repeatExcess: number;
   pairRepeat: number;
+  /** 同じ所属どうしのペアの数（0〜2） */
+  sameTeam: number;
   level: number;
   planScore: number | null;
 }
@@ -470,9 +472,11 @@ export class GoodDayEngine {
         [p0, p3, p1, p2],
       ];
       for (const [a1, a2, b1, b2] of splits) {
+        // 同じ所属どうしのペアは捨てずに減点する（なるべく避ける）
+        let sameTeam = 0;
         if (avoidSameTeamOn) {
-          if (a1.team && a1.team === a2.team) continue;
-          if (b1.team && b1.team === b2.team) continue;
+          if (a1.team && a1.team === a2.team) sameTeam++;
+          if (b1.team && b1.team === b2.team) sameTeam++;
         }
         if (!allowOldPairs) {
           const ka = this.ledger.dyadLast.get(pairKey(a1.name, a2.name));
@@ -499,7 +503,8 @@ export class GoodDayEngine {
           GoodDayEngine.W_RECENCY * recency +
             GoodDayEngine.W_REPEAT * repeat -
             GoodDayEngine.W_NOVELTY * novelty +
-            GoodDayEngine.W_MIXING * mixingPen,
+            GoodDayEngine.W_MIXING * mixingPen +
+            this.config.day_same_team_weight * sameTeam,
         );
         cands.push({
           match: [[a1, a2], [b1, b2]],
@@ -517,6 +522,7 @@ export class GoodDayEngine {
           repeatMax,
           repeatExcess,
           pairRepeat,
+          sameTeam,
           level: 0,
           planScore: null,
         });
@@ -533,6 +539,7 @@ export class GoodDayEngine {
     parts.push(c.components.recency > 0 ? "直近に同席した組あり" : "直近の重なりなし");
     parts.push(`初対面 ${c.newContacts} 組`);
     if (c.bands) parts.push(`実力帯 ${c.bands} 種`);
+    if (c.sameTeam) parts.push(`同じ所属のペア ${c.sameTeam} 組`);
     return parts.join(" ／ ");
   }
 }

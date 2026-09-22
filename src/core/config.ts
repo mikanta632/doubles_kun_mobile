@@ -13,6 +13,8 @@ export interface EngineConfig {
   day_recency_decay: number;
   day_recent_rounds: number;
   day_dyad_slack: number;
+  /** 同じ所属どうしのペア 1 組あたりの減点（なるべく避ける。0 = 気にしない） */
+  day_same_team_weight: number;
 }
 
 export const DEFAULT_CONFIG: EngineConfig = {
@@ -28,6 +30,7 @@ export const DEFAULT_CONFIG: EngineConfig = {
   day_recency_decay: 0.5,
   day_recent_rounds: 3,
   day_dyad_slack: 2,
+  day_same_team_weight: 3,
 };
 
 /** 辞書から作る。知らないキー（旧方式の重みなど）は捨てる。 */

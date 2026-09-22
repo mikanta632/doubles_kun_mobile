@@ -105,7 +105,7 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
         </label>
         <label class="check">
           <input type="checkbox" checked={project.settings.avoid_same_team} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, avoid_same_team: (e.target as HTMLInputElement).checked } }))} />
-          同じ所属の人をペアにしない
+          同じ所属の人をなるべくペアにしない
         </label>
         <label class="check">
           <input type="checkbox" checked={cfg.elo_auto_update} onChange={(e) => setCfg({ elo_auto_update: (e.target as HTMLInputElement).checked })} />
@@ -124,6 +124,7 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
           <NumberField label="出場回数の差の許容（回）" value={cfg.day_play_slack} min={0} max={2} onChange={(v) => setCfg({ day_play_slack: v })} />
           <NumberField label="再同席を避けるラウンド数" value={cfg.day_recent_rounds} min={0} max={5} onChange={(v) => setCfg({ day_recent_rounds: v })} />
           <NumberField label="同席回数の上限（均等な回数に足す分）" value={cfg.day_dyad_slack} min={1} max={5} onChange={(v) => setCfg({ day_dyad_slack: v })} />
+          <NumberField label="同じ所属のペア 1 組あたりの減点（0 = 気にしない）" value={cfg.day_same_team_weight} min={0} max={20} step={0.5} onChange={(v) => setCfg({ day_same_team_weight: v })} />
           <NumberField label="1 ゲームのレートスケール" value={cfg.game_scale} min={100} max={3000} step={50} onChange={(v) => setCfg({ game_scale: v })} />
           <NumberField label="ペア強度の弱い側の重み p（0.5 は単純平均）" value={cfg.pair_weak_weight} min={0.2} max={0.8} step={0.01} onChange={(v) => setCfg({ pair_weak_weight: v })} />
           <NumberField label="Elo の K 係数" value={cfg.elo_k_factor} min={1} max={100} onChange={(v) => setCfg({ elo_k_factor: v })} />
