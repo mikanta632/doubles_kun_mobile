@@ -26,7 +26,7 @@ export function DashboardView({ state, project }: ViewProps) {
         ))}
       </div>
       <div class="seg" style="margin-bottom:10px">
-        {([["people", "一人ひとり"], ["contacts", "同席"], ["timeline", "時系列"], ["ranking", "成績"]] as [Seg, string][]).map(([k, l]) => (
+        {([["people", "個人"], ["contacts", "同席"], ["timeline", "時系列"], ["ranking", "成績"]] as [Seg, string][]).map(([k, l]) => (
           <button key={k} class={seg === k ? "on" : ""} onClick={() => setSeg(k)}>{l}</button>
         ))}
       </div>

@@ -80,7 +80,6 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
             <div class={"item" + (p.id === project.id ? " current" : "")} key={p.id} onClick={() => p.id !== project.id && update((s) => ({ ...s, current: p.id }))}>
               <span class="grow">
                 <span style="font-weight:600">{p.name}</span>
-                {p.id === project.id && <span class="pill on" style="margin-left:6px">開いている</span>}
                 <div class="muted">{describe(p)}</div>
               </span>
             </div>
@@ -155,7 +154,6 @@ function NewProjectSheet({ project, update, notify, onClose }: { project: Projec
   const [name, setName] = useState("");
   const [date, setDate] = useState(todayIso());
   const [place, setPlace] = useState(project.place);
-  const [inherit, setInherit] = useState(project.members.length > 0);
 
   const create = () => {
     const n = name.trim();
@@ -165,8 +163,6 @@ function NewProjectSheet({ project, update, notify, onClose }: { project: Projec
       place: place.trim(),
       config: { ...project.config },
       settings: { ...project.settings },
-      members: inherit ? [...project.members] : [],
-      selected: inherit ? [...project.selected] : [],
     });
     update((s) => addProject(s, p));
     notify(`「${n}」を作って開きました。`);
@@ -190,12 +186,6 @@ function NewProjectSheet({ project, update, notify, onClose }: { project: Projec
             <input type="text" value={place} onInput={(e) => setPlace((e.target as HTMLInputElement).value)} />
           </label>
         </div>
-        {project.members.length > 0 && (
-          <label class="check">
-            <input type="checkbox" checked={inherit} onChange={(e) => setInherit((e.target as HTMLInputElement).checked)} />
-            名簿を引き継ぐ（{project.members.length} 人）
-          </label>
-        )}
         <div class="row" style="justify-content:flex-end">
           <button class="btn" onClick={onClose}>キャンセル</button>
           <button class="btn primary" onClick={create} disabled={!name.trim()}>作る</button>
