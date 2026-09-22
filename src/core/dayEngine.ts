@@ -46,6 +46,13 @@ export function pairKey(a: string, b: string): string {
   return a <= b ? `${a}\u0000${b}` : `${b}\u0000${a}`;
 }
 
+/** 組み合わせ（2 ペア）を、ペアの順・ペア内の順によらないキーにする。 */
+export function matchKey(teamA: readonly string[], teamB: readonly string[]): string {
+  const ka = pairKey(teamA[0], teamA[1]);
+  const kb = pairKey(teamB[0], teamB[1]);
+  return ka <= kb ? `${ka}\u0001${kb}` : `${kb}\u0001${ka}`;
+}
+
 /**
  * 比較に使う実数を 1e-9 刻みに丸める。
  * 10**x や log1p は環境（libm、V8 の版）で最後の 1 ビットが変わることがある。
@@ -86,6 +93,8 @@ export class DayLedger {
   dyadLast = new Map<string, [number, Relation]>();
   dyadCount = new Map<string, number>();
   partnerCount = new Map<string, number>();
+  /** 全く同じ組み合わせ（同じ 2 ペア）の回数 */
+  matchCount = new Map<string, number>();
   contacts = new Map<string, Set<string>>();
 
   constructor(pastMatches: readonly Match[], courts: number) {
@@ -109,6 +118,8 @@ export class DayLedger {
         const k = pairKey(names[i], names[j]);
         this.dyadCount.set(k, (this.dyadCount.get(k) ?? 0) + 1);
       }
+    const mk = matchKey(teamA, teamB);
+    this.matchCount.set(mk, (this.matchCount.get(mk) ?? 0) + 1);
     for (const [a, b] of [teamA, teamB]) {
       const k = pairKey(a, b);
       this.dyadLast.set(k, [rnd, PARTNER]);
@@ -151,15 +162,18 @@ export interface DayCandidate {
   repeatMax: number;
   repeatExcess: number;
   pairRepeat: number;
+  /** 全く同じ組み合わせ（同じ 2 ペア）が過去にあった回数 */
+  exactRepeat: number;
   /** 同じ所属どうしのペアの数（0〜2） */
   sameTeam: number;
   level: number;
   planScore: number | null;
 }
 
+/** 優先順位の上位キー。全く同じ組み合わせの再現を最初に見る（他に候補がある限り選ばない） */
 export function tier(c: DayCandidate): number[] {
   const heavy = c.level >= HEAVY_RELAX_LEVEL ? 1 : 0;
-  return [c.repeatMax, c.repeatExcess, heavy, c.pairRepeat, c.imbalance, c.recent, c.level];
+  return [c.exactRepeat, c.repeatMax, c.repeatExcess, heavy, c.pairRepeat, c.imbalance, c.recent, c.level];
 }
 
 function sortKey(c: DayCandidate): number[] {
@@ -484,6 +498,7 @@ export class GoodDayEngine {
           if ((ka && ka[1] === PARTNER) || (kb && kb[1] === PARTNER)) continue;
         }
         const failed = new Set(groupFailed);
+        const exactRepeat = this.ledger.matchCount.get(matchKey([a1.name, a2.name], [b1.name, b2.name])) ?? 0;
         const pairRepeat =
           (this.ledger.partnerCount.get(pairKey(a1.name, a2.name)) ?? 0) +
           (this.ledger.partnerCount.get(pairKey(b1.name, b2.name)) ?? 0);
@@ -522,6 +537,7 @@ export class GoodDayEngine {
           repeatMax,
           repeatExcess,
           pairRepeat,
+          exactRepeat,
           sameTeam,
           level: 0,
           planScore: null,
@@ -540,6 +556,7 @@ export class GoodDayEngine {
     parts.push(`初対面 ${c.newContacts} 組`);
     if (c.bands) parts.push(`実力帯 ${c.bands} 種`);
     if (c.sameTeam) parts.push(`同じ所属のペア ${c.sameTeam} 組`);
+    if (c.exactRepeat) parts.push(`同じ組み合わせ ${c.exactRepeat} 回目`);
     return parts.join(" ／ ");
   }
 }
