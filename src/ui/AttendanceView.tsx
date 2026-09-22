@@ -1,55 +1,42 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import { countPlays } from "../core/dayEngine";
-import { newPlayer, type Player } from "../core/models";
-import { deletePlayer, memberPlayers, playedAnywhere, playedIn, recalcRatings, renamePlayer, updateCurrent } from "../store";
-import { Sheet } from "./Sheet";
-import { Wheel, type WheelOption } from "./Wheel";
-
-type Seg = "members" | "db";
+import type { Player } from "../core/models";
+import { memberPlayers, playedIn } from "../store";
+import { PlayerEditSheet } from "./PlayerEditSheet";
 
 /**
- * メンバータブ。
- *   参加者      … この会に来ている人。チェックを付けた人が試合の候補になる
- *   データベース … 登録した全プレイヤー。ここから参加者を選ぶ
+ * メンバータブ。プロジェクトの名簿のうち、今日試合に入れる人にチェックを付ける。
+ * 名簿そのもの（データベースから誰を入れるか）はプロジェクトタブで作る。
  */
-export function AttendanceView({ state, project, update, updateProject, notify }: ViewProps) {
-  const [seg, setSeg] = useState<Seg>(() => (project.members.length ? "members" : "db"));
+export function AttendanceView(props: ViewProps & { onGoProject: () => void }) {
+  const { state, project, updateProject, notify, onGoProject } = props;
   const [editing, setEditing] = useState<Player | null>(null);
 
   const members = useMemo(() => memberPlayers(state, project), [state, project]);
   const plays = useMemo(() => countPlays(members, project.matches), [members, project.matches]);
   const selected = new Set(project.selected);
-  const memberSet = new Set(project.members);
   const nSelected = members.filter((p) => p.active && selected.has(p.name)).length;
 
-  const toggleSelected = (name: string) =>
+  const toggle = (name: string) =>
     updateProject((p) => ({ ...p, selected: p.selected.includes(name) ? p.selected.filter((n) => n !== name) : [...p.selected, name] }));
 
-  /** 参加者に入れる／外す。会の試合に出ている人は外せない */
-  const toggleMember = (name: string) => {
-    if (memberSet.has(name)) {
-      if (playedIn(project, name)) {
-        notify("この会の試合に出ている人は参加者から外せません。「試合に入れる」のチェックを外してください。");
-        return;
-      }
-      updateProject((p) => ({ ...p, members: p.members.filter((n) => n !== name), selected: p.selected.filter((n) => n !== name) }));
-    } else {
-      updateProject((p) => ({ ...p, members: [...p.members, name], selected: [...p.selected, name] }));
+  const removeMember = (name: string) => {
+    if (playedIn(project, name)) {
+      notify("このプロジェクトの試合に出ている人は名簿から外せません。「試合に入れる」のチェックを外してください。");
+      return;
     }
+    updateProject((p) => ({ ...p, members: p.members.filter((n) => n !== name), selected: p.selected.filter((n) => n !== name) }));
   };
 
-  const props = { state, project, update, updateProject, notify };
   return (
     <>
       <div class="topbar">
         <div>
           <h1>メンバー</h1>
-          <div class="sub">
-            {seg === "members" ? <>試合に入れる人にチェック。{nSelected} / {members.length} 人</> : <>登録 {state.db.length} 人・「{project.name}」の参加者 {members.length} 人</>}
-          </div>
+          <div class="sub">「{project.name}」の名簿。試合に入れる人にチェック。{nSelected} / {members.length} 人</div>
         </div>
-        {seg === "members" && members.length > 0 && (
+        {members.length > 0 && (
           <div class="row">
             <button class="btn small" onClick={() => updateProject((p) => ({ ...p, selected: memberPlayers(state, p).filter((x) => x.active).map((x) => x.name) }))}>全員選択</button>
             <button class="btn small" onClick={() => updateProject((p) => ({ ...p, selected: [] }))}>全員解除</button>
@@ -57,223 +44,37 @@ export function AttendanceView({ state, project, update, updateProject, notify }
         )}
       </div>
 
-      <div class="seg" style="margin-bottom:10px">
-        <button class={seg === "members" ? "on" : ""} onClick={() => setSeg("members")}>参加者（{members.length}）</button>
-        <button class={seg === "db" ? "on" : ""} onClick={() => setSeg("db")}>データベース（{state.db.length}）</button>
-      </div>
-
-      {seg === "members" && <MembersList {...props} members={members} plays={plays} selected={selected} onToggle={toggleSelected} onEdit={setEditing} onAdd={() => setSeg("db")} />}
-      {seg === "db" && <DatabaseList {...props} memberSet={memberSet} onToggleMember={toggleMember} onEdit={setEditing} />}
-
-      {editing && <EditSheet {...props} player={editing} onRemove={toggleMember} onClose={() => setEditing(null)} />}
-    </>
-  );
-}
-
-function MembersList({ project, members, plays, selected, onToggle, onEdit, onAdd }: ViewProps & {
-  members: Player[];
-  plays: Map<string, number>;
-  selected: Set<string>;
-  onToggle: (name: string) => void;
-  onEdit: (p: Player) => void;
-  onAdd: () => void;
-}) {
-  if (members.length === 0) {
-    return (
-      <div class="card">
-        <div class="empty">「{project.name}」の参加者がまだいません。</div>
-        <button class="btn primary block" onClick={onAdd}>データベースから選ぶ</button>
-      </div>
-    );
-  }
-  return (
-    <>
-      <div class="card list">
-        {members.map((p) => (
-          <div class="item" key={p.name}>
-            <label class="check grow" style="min-height:0">
-              <input type="checkbox" checked={p.active && selected.has(p.name)} disabled={!p.active} onChange={() => onToggle(p.name)} />
-              <span class="grow">
-                <span style="font-weight:600">{p.name}</span>
-                {p.team && <span class="pill" style="margin-left:6px">{p.team}</span>}
-                {!p.active && <span class="pill" style="margin-left:6px">休会中</span>}
-                <div class="muted">レート {Math.round(p.rating)}・出場 {plays.get(p.name) ?? 0} 回</div>
-              </span>
-            </label>
-            <button class="btn small ghost" onClick={() => onEdit(p)}>編集</button>
-          </div>
-        ))}
-      </div>
-      <button class="btn block" onClick={onAdd}>データベースから追加</button>
-      <div class="muted" style="margin-top:6px">集計は参加者だけを対象にします。参加者から外すには、編集か「データベース」から。</div>
-    </>
-  );
-}
-
-function DatabaseList({ state, project, update, updateProject, notify, memberSet, onToggleMember, onEdit }: ViewProps & {
-  memberSet: Set<string>;
-  onToggleMember: (name: string) => void;
-  onEdit: (p: Player) => void;
-}) {
-  const [newName, setNewName] = useState("");
-  const [newRating, setNewRating] = useState("1500");
-  const active = state.db.filter((p) => p.active);
-  const inactive = state.db.filter((p) => !p.active);
-
-  const addPlayer = () => {
-    const name = newName.trim();
-    if (!name) return;
-    if (state.db.some((p) => p.name === name)) {
-      notify("同じ名前の人が登録されています。");
-      return;
-    }
-    const rating = Number(newRating);
-    // 登録した人は、そのままこの会の参加者にする
-    update((s) => updateCurrent({ ...s, db: [...s.db, newPlayer(name, Number.isFinite(rating) ? rating : 1500)] }, (p) => ({ ...p, members: [...p.members, name], selected: [...p.selected, name] })));
-    setNewName("");
-    setNewRating("1500");
-  };
-
-  const row = (p: Player) => {
-    const on = memberSet.has(p.name);
-    return (
-      <div class="item" key={p.name}>
-        <span class="grow" onClick={() => onEdit(p)}>
-          <span style={p.active ? "font-weight:600" : "color:var(--muted)"}>{p.name}</span>
-          {p.team && <span class="pill" style="margin-left:6px">{p.team}</span>}
-          <div class="muted">レート {Math.round(p.rating)}</div>
-        </span>
-        <button class={"btn small" + (on ? " primary" : "")} style="min-width:64px" onClick={() => onToggleMember(p.name)} disabled={!p.active && !on}>
-          {on ? "参加中" : "参加"}
-        </button>
-      </div>
-    );
-  };
-
-  return (
-    <>
-      <div class="card">
-        <div class="row">
-          <input class="grow" type="text" placeholder="名前" value={newName} onInput={(e) => setNewName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && addPlayer()} />
-          <input type="number" style="width:88px" inputMode="numeric" value={newRating} onInput={(e) => setNewRating((e.target as HTMLInputElement).value)} />
-          <button class="btn primary" onClick={addPlayer} disabled={!newName.trim()}>登録</button>
+      {members.length === 0 ? (
+        <div class="card">
+          <div class="empty">「{project.name}」の名簿がまだありません。</div>
+          <button class="btn primary block" onClick={onGoProject}>プロジェクトタブで名簿を作る</button>
         </div>
-        <div class="muted" style="margin-top:6px">右の数字はレート。分からなければ 1500 のままで、あとから直せます。登録した人は「{project.name}」の参加者になります。</div>
-      </div>
-
-      {active.length === 0 ? (
-        <div class="empty">まだ誰も登録されていません。上で名前を登録するか、設定タブから players.json を読み込んでください。</div>
       ) : (
-        <div class="card list">
-          <div class="muted" style="padding:4px">「参加」を押すと「{project.name}」の参加者になります。名前をタップで編集。</div>
-          {active.map(row)}
-        </div>
-      )}
-
-      {inactive.length > 0 && (
-        <details class="card">
-          <summary>休会中（{inactive.length}）</summary>
-          <div class="list">{inactive.map(row)}</div>
-        </details>
-      )}
-    </>
-  );
-}
-
-/** 所属のドラムロールで「新しく入力」を選んだことを表す値 */
-const NEW_TEAM = " new";
-
-function EditSheet({ player, state, project, update, notify, onRemove, onClose }: ViewProps & { player: Player; onRemove: (name: string) => void; onClose: () => void }) {
-  const [name, setName] = useState(player.name);
-  const [rating, setRating] = useState(String(player.initial_rating));
-  const [active, setActive] = useState(player.active);
-  const isMember = project.members.includes(player.name);
-  const playedHere = playedIn(project, player.name);
-
-  // 所属は、すでに誰かに入っている候補から選ぶ。なければ新しく入力する
-  const teams = useMemo(
-    () => [...new Set(state.db.map((p) => (p.team ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja")),
-    [state.db],
-  );
-  const teamOptions: WheelOption<string>[] = [
-    { value: "", label: "なし" },
-    ...teams.map((t) => ({ value: t, label: t })),
-    { value: NEW_TEAM, label: "新しく入力" },
-  ];
-  const [teamChoice, setTeamChoice] = useState(player.team && teams.includes(player.team) ? player.team : "");
-  const [teamText, setTeamText] = useState("");
-  const team = teamChoice === NEW_TEAM ? teamText.trim() : teamChoice;
-
-  const save = () => {
-    const newName = name.trim();
-    if (!newName) return;
-    if (newName !== player.name && state.db.some((p) => p.name === newName)) {
-      notify("同じ名前の人が登録されています。");
-      return;
-    }
-    const r = Number(rating);
-    update((s0) => {
-      const s = renamePlayer(s0, player.name, newName);
-      const db = s.db.map((p) =>
-        p.name === newName
-          ? { ...p, initial_rating: Number.isFinite(r) ? r : p.initial_rating, rating: Number.isFinite(r) ? r : p.rating, team: team || null, active }
-          : p,
-      );
-      // 休会中にした人は、どの会でも試合の候補から外す
-      const projects = active ? s.projects : s.projects.map((p) => ({ ...p, selected: p.selected.filter((n) => n !== newName) }));
-      return recalcRatings({ ...s, db, projects });
-    });
-    onClose();
-  };
-
-  const remove = () => {
-    if (playedAnywhere(state, player.name)) {
-      notify("試合に出ている人は削除できません。代わりに休会中にしてください。");
-      return;
-    }
-    if (!confirm(`${player.name} をデータベースから削除しますか？`)) return;
-    update((s) => deletePlayer(s, player.name));
-    onClose();
-  };
-
-  return (
-    <Sheet title="メンバーを編集" onClose={onClose}>
-      <div class="stack">
-        <label>
-          <div class="muted">名前</div>
-          <input type="text" value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
-        </label>
-        <label>
-          <div class="muted">レート（初期値。現在は {Math.round(player.rating)}）</div>
-          <input type="number" inputMode="numeric" value={rating} onInput={(e) => setRating((e.target as HTMLInputElement).value)} />
-        </label>
-        <div>
-          <div class="muted">所属（「同じ所属の人をペアにしない」に使う）</div>
-          <Wheel options={teamOptions} value={teamChoice} onChange={setTeamChoice} />
-          {teamChoice === NEW_TEAM && (
-            <input type="text" placeholder="所属を入力" value={teamText} onInput={(e) => setTeamText((e.target as HTMLInputElement).value)} style="margin-top:6px" />
-          )}
-        </div>
-        <label class="check">
-          <input type="checkbox" checked={active} onChange={(e) => setActive((e.target as HTMLInputElement).checked)} />
-          <span>
-            現在のメンバー
-            <div class="muted">外すと休会中になり、試合の候補に入らなくなります</div>
-          </span>
-        </label>
-        {isMember && (
-          <button class="btn block" onClick={() => { onRemove(player.name); if (!playedHere) onClose(); }} disabled={playedHere}>
-            「{project.name}」の参加者から外す{playedHere && "（試合に出ているため不可）"}
-          </button>
-        )}
-        <div class="row between">
-          <button class="btn danger" onClick={remove}>削除</button>
-          <div class="row">
-            <button class="btn" onClick={onClose}>キャンセル</button>
-            <button class="btn primary" onClick={save}>保存</button>
+        <>
+          <div class="card list">
+            {members.map((p) => (
+              <div class="item" key={p.name}>
+                <label class="check grow" style="min-height:0">
+                  <input type="checkbox" checked={p.active && selected.has(p.name)} disabled={!p.active} onChange={() => toggle(p.name)} />
+                  <span class="grow">
+                    <span style="font-weight:600">{p.name}</span>
+                    {p.team && <span class="pill" style="margin-left:6px">{p.team}</span>}
+                    {!p.active && <span class="pill" style="margin-left:6px">休会中</span>}
+                    <div class="muted">レート {Math.round(p.rating)}・出場 {plays.get(p.name) ?? 0} 回</div>
+                  </span>
+                </label>
+                <button class="btn small ghost" onClick={() => setEditing(p)}>編集</button>
+              </div>
+            ))}
           </div>
-        </div>
-      </div>
-    </Sheet>
+          <div class="row between">
+            <span class="muted">名簿の追加・削除はプロジェクトタブから</span>
+            <button class="btn small" onClick={onGoProject}>名簿を編集</button>
+          </div>
+        </>
+      )}
+
+      {editing && <PlayerEditSheet {...props} player={editing} onRemove={removeMember} onClose={() => setEditing(null)} />}
+    </>
   );
 }

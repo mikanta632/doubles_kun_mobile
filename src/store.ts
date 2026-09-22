@@ -4,12 +4,12 @@
  * サーバーはないので端末の localStorage に保存する。
  *
  * メンバーは 3 層に分ける:
- *   1. データベース（db）      … この端末に登録した全プレイヤー。会をまたいで共有する
- *   2. 会の参加者（members）   … データベースから選んだ、この会に来ている人
- *   3. 試合に入れる人（selected） … 参加者のうち、次の試合の候補にする人
- * 集計は参加者だけを対象にする。
+ *   1. データベース（db）      … この端末に登録した全プレイヤー。プロジェクトをまたいで共有する
+ *   2. 名簿（members）        … データベースから選んだ、このプロジェクトに来ている人
+ *   3. 試合に入れる人（selected） … 名簿のうち、次の試合の候補にする人
+ * 集計は名簿の人だけを対象にする。
  *
- * 会（プロジェクト）は複数持てる。試合・設定・参加者は会ごと、データベースは共通。
+ * プロジェクトは複数持てる。試合・設定・名簿はプロジェクトごと、データベースは共通。
  * デスクトップ版と同じ players.json / matches.json の形で書き出し・読み込みができる（io.ts）。
  */
 
@@ -20,14 +20,18 @@ import { matchFromJson, playerFromJson, type Match, type Player } from "./core/m
 export interface Project {
   id: string;
   name: string;
+  /** 開催日（YYYY-MM-DD。未定なら空） */
+  date: string;
+  /** 場所（空でもよい） */
+  place: string;
   created_at: string;
   updated_at: string;
   matches: Match[];
   config: EngineConfig;
   settings: MatchSettings;
-  /** 会の参加者（データベース上の名前） */
+  /** 名簿（データベース上の名前） */
   members: string[];
-  /** 試合に入れる人（参加者のうち） */
+  /** 試合に入れる人（名簿のうち） */
   selected: string[];
 }
 
@@ -35,7 +39,7 @@ export interface AppState {
   /** プレイヤーデータベース */
   db: Player[];
   projects: Project[];
-  /** いま開いている会の id */
+  /** いま開いているプロジェクトの id */
   current: string;
 }
 
@@ -47,6 +51,8 @@ export function newProject(name: string, base?: Partial<Project>): Project {
   const p: Project = {
     id: uuid(),
     name: name || "ダブルスくん",
+    date: "",
+    place: "",
     created_at: now,
     updated_at: now,
     matches: [],
@@ -60,6 +66,13 @@ export function newProject(name: string, base?: Partial<Project>): Project {
   return p;
 }
 
+/** 今日の日付（端末のローカル時刻で YYYY-MM-DD） */
+export function todayIso(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 export function emptyState(): AppState {
   const p = newProject("ダブルスくん");
   return { db: [], projects: [p], current: p.id };
@@ -69,7 +82,7 @@ export function loadState(): AppState {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) return stateFromJson(JSON.parse(raw));
-    // 旧版（会が 1 つだけ）からの移行。旧データは念のため残す
+    // 旧版（プロジェクトが 1 つだけ）からの移行。旧データは念のため残す
     const old = localStorage.getItem(KEY_V1);
     if (old) {
       const s = migrateV1(JSON.parse(old));
@@ -90,7 +103,7 @@ export function saveState(s: AppState): void {
   }
 }
 
-/** 旧版の状態（players / matches / selected が 1 組）を、データベース + 会 1 つに直す。 */
+/** 旧版の状態（players / matches / selected が 1 組）を、データベース + プロジェクト 1 つに直す。 */
 export function migrateV1(d: Record<string, unknown>): AppState {
   const { players, project } = projectFromJson(d);
   return { db: players, projects: [project], current: project.id };
@@ -108,7 +121,7 @@ export function stateFromJson(d: Record<string, unknown>): AppState {
 }
 
 /**
- * 会 1 つ分を JSON から読む。デスクトップ版の project.json + players.json + matches.json を
+ * プロジェクト 1 つ分を JSON から読む。デスクトップ版の project.json + players.json + matches.json を
  * まとめた形（io.ts の bundle）と、この保存形式の両方を受け付ける。
  * 返す players は、その JSON に入っていたプレイヤー（データベースに足す分）。
  * known を渡すと、members / selected はその名前に限る。
@@ -127,6 +140,8 @@ export function projectFromJson(d: Record<string, unknown>, known?: Set<string>)
   const settingsRaw = (d.settings ?? d.match_settings) as Record<string, unknown> | undefined;
   const project = newProject(typeof d.name === "string" && d.name.trim() ? d.name.trim() : "ダブルスくん", {
     id: typeof d.id === "string" && d.id ? d.id : undefined,
+    date: typeof d.date === "string" ? d.date : undefined,
+    place: typeof d.place === "string" ? d.place : undefined,
     created_at: typeof d.created_at === "string" ? d.created_at : undefined,
     updated_at: typeof d.updated_at === "string" ? d.updated_at : undefined,
     matches,
@@ -158,13 +173,13 @@ function uuid(): string {
   });
 }
 
-// ---- 会の出し入れ ----
+// ---- プロジェクトの出し入れ ----
 
 export function currentProject(s: AppState): Project {
   return s.projects.find((p) => p.id === s.current) ?? s.projects[0];
 }
 
-/** いま開いている会だけを書き換える。updated_at も進める。 */
+/** いま開いているプロジェクトだけを書き換える。updated_at も進める。 */
 export function updateCurrent(s: AppState, fn: (p: Project, s: AppState) => Project): AppState {
   const cur = currentProject(s);
   const next = { ...fn(cur, s), updated_at: new Date().toISOString() };
@@ -183,13 +198,13 @@ export function removeProject(s: AppState, id: string): AppState {
 
 // ---- メンバーの 3 層 ----
 
-/** 会の参加者（データベース上の Player）。members の順。 */
+/** 名簿（データベース上の Player）。members の順。 */
 export function memberPlayers(s: AppState, p: Project = currentProject(s)): Player[] {
   const byName = new Map(s.db.map((x) => [x.name, x]));
   return p.members.map((n) => byName.get(n)).filter((x): x is Player => x !== undefined);
 }
 
-/** 出場候補（参加者で、試合に入れるチェックが付いていて、いま試合中でない人）。 */
+/** 出場候補（名簿にいて、試合に入れるチェックが付いていて、いま試合中でない人）。 */
 export function availablePlayers(s: AppState, p: Project = currentProject(s)): Player[] {
   const inPlay = new Set<string>();
   for (const m of p.matches) if (m.in_play) for (const n of [...m.team_a, ...m.team_b]) inPlay.add(n);
@@ -201,12 +216,12 @@ export function playedIn(p: Project, name: string): boolean {
   return p.matches.some((m) => m.team_a.includes(name) || m.team_b.includes(name));
 }
 
-/** その名前がどれかの会の試合に出ているか。 */
+/** その名前がどれかのプロジェクトの試合に出ているか。 */
 export function playedAnywhere(s: AppState, name: string): boolean {
   return s.projects.some((p) => playedIn(p, name));
 }
 
-/** データベースの名前を変える。すべての会の試合・参加者にも反映する。 */
+/** データベースの名前を変える。すべてのプロジェクトの試合・名簿にも反映する。 */
 export function renamePlayer(s: AppState, from: string, to: string): AppState {
   if (from === to) return s;
   const r = (n: string) => (n === from ? to : n);
@@ -222,7 +237,7 @@ export function renamePlayer(s: AppState, from: string, to: string): AppState {
   };
 }
 
-/** データベースから消す。参加者からも外す（試合には出ていない前提）。 */
+/** データベースから消す。名簿からも外す（試合には出ていない前提）。 */
 export function deletePlayer(s: AppState, name: string): AppState {
   return {
     ...s,
@@ -238,7 +253,7 @@ export function mergePlayers(s: AppState, players: readonly Player[]): AppState 
   return { ...s, db: [...byName.values()] };
 }
 
-/** いま開いている会の試合から、データベースのレートを計算し直す。 */
+/** いま開いているプロジェクトの試合から、データベースのレートを計算し直す。 */
 export function recalcRatings(s: AppState, force = false): AppState {
   const p = currentProject(s);
   if (!force && !p.config.elo_auto_update) return s;

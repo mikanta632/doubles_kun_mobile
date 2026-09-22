@@ -9,14 +9,14 @@ export function DashboardView({ state, project }: ViewProps) {
   const [seg, setSeg] = useState<Seg>("people");
   const d = useMemo(() => buildDashboard(memberPlayers(state, project), project.matches, project.config), [state, project]);
 
-  if (d.people.rows.length === 0) return <div class="empty">「{project.name}」に参加者がいません。メンバータブで選んでください。</div>;
+  if (d.people.rows.length === 0) return <div class="empty">「{project.name}」の名簿がありません。プロジェクトタブで作ってください。</div>;
 
   return (
     <>
       <div class="topbar">
         <div>
           <h1>集計</h1>
-          <div class="sub">{project.name}・参加者 {d.people.rows.length} 人</div>
+          <div class="sub">{project.name}・名簿 {d.people.rows.length} 人</div>
         </div>
       </div>
       <div class="cards">

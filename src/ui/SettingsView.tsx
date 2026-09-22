@@ -7,9 +7,8 @@ import { estimatePairModel, estimateSummary, isConclusive } from "../core/pairMo
 import { planSummary, type PlanResult } from "../core/planOptimizer";
 import { gameWinProb, ratingDiffForProb } from "../core/winModel";
 import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareText, todayStamp } from "../io";
-import { addProject, availablePlayers, emptyState, mergePlayers, newProject, recalcRatings, removeProject, updateCurrent, type Project } from "../store";
+import { addProject, availablePlayers, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
 import type { PlanMessage, PlanRequest } from "../planWorker";
-import { Sheet } from "./Sheet";
 import { UpdateCard } from "./UpdateCard";
 
 export function SettingsView({ state, project, update, updateProject, notify }: ViewProps) {
@@ -19,7 +18,7 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
 
   const recalc = () => {
     update((s) => recalcRatings(s, true));
-    notify("初期レートとこの会の試合結果から、現在のレートを計算し直しました。");
+    notify("初期レートとこのプロジェクトの試合結果から、現在のレートを計算し直しました。");
   };
 
   const estimate = () => {
@@ -39,7 +38,7 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
       if (imp.kind === "bundle") {
         const same = state.projects.find((p) => p.name === imp.project.name);
         if (same) {
-          if (!confirm(`「${same.name}」はすでにあります。読み込んだ内容で置き換えますか？`)) return;
+          if (!confirm(`プロジェクト「${same.name}」はすでにあります。読み込んだ内容で置き換えますか？`)) return;
           update((s) => {
             const merged = mergePlayers(s, imp.players);
             const replaced: Project = { ...imp.project, id: same.id };
@@ -48,9 +47,9 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
         } else {
           update((s) => addProject(mergePlayers(s, imp.players), imp.project));
         }
-        notify(`「${imp.project.name}」を読み込みました（参加者 ${imp.project.members.length} 人・${imp.project.matches.length} 試合）。`);
+        notify(`プロジェクト「${imp.project.name}」を読み込みました（名簿 ${imp.project.members.length} 人・${imp.project.matches.length} 試合）。`);
       } else if (imp.kind === "players") {
-        // players.json はデスクトップ版のプロジェクトのメンバー。データベースに足し、この会の参加者にする
+        // players.json はデスクトップ版のプロジェクトのメンバー。データベースに足し、このプロジェクトの名簿に入れる
         update((s) => {
           const merged = mergePlayers(s, imp.players);
           return updateCurrent(merged, (p) => {
@@ -60,10 +59,10 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
             return { ...p, members, selected };
           });
         });
-        notify(`${imp.players.length} 人を読み込み、「${project.name}」の参加者にしました。`);
+        notify(`${imp.players.length} 人を読み込み、「${project.name}」の名簿に入れました。`);
       } else {
         if (project.matches.length > 0 && !confirm(`「${project.name}」の試合をすべて置き換えます。よろしいですか？`)) return;
-        // 試合に出ている人がデータベースにいなければ、名前だけ登録して参加者にする
+        // 試合に出ている人がデータベースにいなければ、名前だけ登録して名簿に入れる
         update((s) => {
           const known = new Set(s.db.map((p) => p.name));
           const names = [...new Set(imp.matches.flatMap((m) => [...m.team_a, ...m.team_b]))];
@@ -91,10 +90,11 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
   return (
     <>
       <div class="topbar">
-        <h1>設定</h1>
+        <div>
+          <h1>設定</h1>
+          <div class="sub">「{project.name}」の設定。プロジェクトごとに保存されます</div>
+        </div>
       </div>
-
-      <ProjectCard state={state} project={project} update={update} updateProject={updateProject} notify={notify} />
 
       <div class="card stack">
         <h2>試合の組み方</h2>
@@ -148,104 +148,21 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
           <button class="btn grow" onClick={() => downloadText("players.json", playersJson(state, project))}>players.json</button>
           <button class="btn grow" onClick={() => downloadText("matches.json", matchesJson(project))}>matches.json</button>
         </div>
-        <div class="muted">「すべて書き出す」は「{project.name}」の参加者・試合・設定にデータベースを添えたもの。players.json（参加者）と matches.json はデスクトップ版のプロジェクトフォルダにそのまま置けます。</div>
+        <div class="muted">「すべて書き出す」は「{project.name}」の名簿・試合・設定にデータベースを添えたもの。players.json（名簿）と matches.json はデスクトップ版のプロジェクトフォルダにそのまま置けます。</div>
         <div class="row wrap">
           <button class="btn" onClick={() => fileRef.current?.click()}>ファイルを読み込む</button>
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) onImport(f); (e.target as HTMLInputElement).value = ""; }} />
         </div>
-        <div class="muted">書き出したファイルは会として読み込まれます。players.json はデータベースに足して「{project.name}」の参加者に、matches.json はこの会の試合になります。</div>
+        <div class="muted">書き出したファイルはプロジェクトとして読み込まれます。players.json はデータベースに足して「{project.name}」の名簿に、matches.json はこのプロジェクトの試合になります。</div>
         <div class="row wrap">
-          <button class="btn danger" onClick={() => { if (project.matches.length && confirm("試合をすべて消して新しい日を始めますか？（参加者は残ります）")) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>新しい日を始める</button>
-          <button class="btn danger" onClick={() => { if (confirm("データベースもすべての会も消します。よろしいですか？")) { update(() => emptyState()); notify("すべて消しました。"); } }}>すべて削除</button>
+          <button class="btn danger" onClick={() => { if (project.matches.length && confirm("試合をすべて消して新しい日を始めますか？（名簿は残ります）")) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>新しい日を始める</button>
+          <button class="btn danger" onClick={() => { if (confirm("データベースもすべてのプロジェクトも消します。よろしいですか？")) { update(() => emptyState()); notify("すべて消しました。"); } }}>すべて削除</button>
         </div>
         <div class="muted">データはこの端末のブラウザにだけ保存されます。会が終わったら書き出しておくと安心です。</div>
       </div>
 
       <UpdateCard />
     </>
-  );
-}
-
-/** 会（プロジェクト）の切り替え・作成・名前の変更・削除。 */
-function ProjectCard({ state, project, update, updateProject, notify }: ViewProps) {
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [inherit, setInherit] = useState(true);
-  const sorted = [...state.projects].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
-
-  const create = () => {
-    const name = newName.trim();
-    if (!name) return;
-    if (state.projects.some((p) => p.name === name)) {
-      notify("同じ名前の会があります。");
-      return;
-    }
-    const p = newProject(name, {
-      config: { ...project.config },
-      settings: { ...project.settings },
-      members: inherit ? [...project.members] : [],
-      selected: inherit ? [...project.selected] : [],
-    });
-    update((s) => addProject(s, p));
-    setCreating(false);
-    setNewName("");
-    notify(`「${name}」を作りました。`);
-  };
-
-  const remove = () => {
-    const msg = project.matches.length
-      ? `「${project.name}」を削除しますか？ ${project.matches.length} 試合が消えます（データベースのメンバーは残ります）。`
-      : `「${project.name}」を削除しますか？（データベースのメンバーは残ります）`;
-    if (!confirm(msg)) return;
-    update((s) => removeProject(s, project.id));
-    notify(`「${project.name}」を削除しました。`);
-  };
-
-  return (
-    <div class="card stack">
-      <h2>会</h2>
-      {sorted.length > 1 && (
-        <div>
-          <div class="muted">開く会を選ぶ</div>
-          <select value={project.id} onChange={(e) => update((s) => ({ ...s, current: (e.target as HTMLSelectElement).value }))}>
-            {sorted.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}（参加者 {p.members.length}・{p.matches.length} 試合）</option>
-            ))}
-          </select>
-        </div>
-      )}
-      <label>
-        <div class="muted">会の名前（書き出すファイル名に使う）</div>
-        <input type="text" value={project.name} onInput={(e) => updateProject((p) => ({ ...p, name: (e.target as HTMLInputElement).value }))} />
-      </label>
-      <div class="row wrap">
-        <button class="btn" onClick={() => setCreating(true)}>新しい会を作る</button>
-        <button class="btn danger" onClick={remove}>この会を削除</button>
-      </div>
-      <div class="muted">参加者・試合・設定は会ごと。メンバーのデータベースは全部の会で共通です。</div>
-
-      {creating && (
-        <Sheet title="新しい会" onClose={() => setCreating(false)}>
-          <div class="stack">
-            <label>
-              <div class="muted">名前</div>
-              <input type="text" placeholder="例: 2026年度春秋杯" value={newName} onInput={(e) => setNewName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && create()} />
-            </label>
-            <label class="check">
-              <input type="checkbox" checked={inherit} onChange={(e) => setInherit((e.target as HTMLInputElement).checked)} />
-              <span>
-                「{project.name}」の参加者を引き継ぐ
-                <div class="muted">設定はいつも引き継ぎます。試合は引き継ぎません</div>
-              </span>
-            </label>
-            <div class="row" style="justify-content:flex-end">
-              <button class="btn" onClick={() => setCreating(false)}>キャンセル</button>
-              <button class="btn primary" onClick={create} disabled={!newName.trim()}>作る</button>
-            </div>
-          </div>
-        </Sheet>
-      )}
-    </div>
   );
 }
 

@@ -1,29 +1,31 @@
 import { useCallback, useEffect, useState } from "preact/hooks";
 import { currentProject, loadState, saveState, updateCurrent, type AppState, type Project } from "./store";
 import { AttendanceView } from "./ui/AttendanceView";
+import { ProjectView } from "./ui/ProjectView";
 import { MatchesView } from "./ui/MatchesView";
 import { DashboardView } from "./ui/DashboardView";
 import { SettingsView } from "./ui/SettingsView";
 import { UpdateBanner } from "./ui/UpdateCard";
-import { DashboardIcon, MatchesIcon, MembersIcon, SettingsIcon } from "./ui/icons";
+import { DashboardIcon, MatchesIcon, MembersIcon, ProjectIcon, SettingsIcon } from "./ui/icons";
 import type { ComponentType } from "preact";
 
-export type Tab = "attendance" | "matches" | "dashboard" | "settings";
+export type Tab = "project" | "attendance" | "matches" | "dashboard" | "settings";
 export type Update = (fn: (s: AppState) => AppState) => void;
 export type UpdateProject = (fn: (p: Project, s: AppState) => Project) => void;
 export type Notify = (msg: string) => void;
 
 export interface ViewProps {
   state: AppState;
-  /** いま開いている会 */
+  /** いま開いているプロジェクト */
   project: Project;
   update: Update;
-  /** いま開いている会だけを書き換える */
+  /** いま開いているプロジェクトだけを書き換える */
   updateProject: UpdateProject;
   notify: Notify;
 }
 
 const TABS: { key: Tab; label: string; icon: ComponentType }[] = [
+  { key: "project", label: "プロジェクト", icon: ProjectIcon },
   { key: "attendance", label: "メンバー", icon: MembersIcon },
   { key: "matches", label: "試合", icon: MatchesIcon },
   { key: "dashboard", label: "集計", icon: DashboardIcon },
@@ -32,7 +34,7 @@ const TABS: { key: Tab; label: string; icon: ComponentType }[] = [
 
 export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
-  const [tab, setTab] = useState<Tab>(() => (currentProject(state).members.length ? "matches" : "attendance"));
+  const [tab, setTab] = useState<Tab>(() => (currentProject(state).members.length ? "matches" : "project"));
   const [toast, setToast] = useState<string | null>(null);
 
   const update: Update = useCallback((fn) => {
@@ -57,7 +59,8 @@ export function App() {
     <>
       <div class="screen">
         <UpdateBanner />
-        {tab === "attendance" && <AttendanceView {...props} />}
+        {tab === "project" && <ProjectView {...props} />}
+        {tab === "attendance" && <AttendanceView {...props} onGoProject={() => setTab("project")} />}
         {tab === "matches" && <MatchesView {...props} />}
         {tab === "dashboard" && <DashboardView {...props} />}
         {tab === "settings" && <SettingsView {...props} />}

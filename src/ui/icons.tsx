@@ -2,6 +2,15 @@
 
 const attrs = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": 1.8, "stroke-linecap": "round", "stroke-linejoin": "round" } as const;
 
+export function ProjectIcon() {
+  return (
+    <svg {...attrs}>
+      <path d="M4 7.5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+      <path d="M4 11h16" />
+    </svg>
+  );
+}
+
 export function MembersIcon() {
   return (
     <svg {...attrs}>

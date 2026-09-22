@@ -5,7 +5,7 @@ import { memberPlayers, projectFromJson, type AppState, type Project } from "./s
 
 /**
  * デスクトップ版の project.json + players.json + matches.json を 1 つにまとめた形。
- * players は会の参加者。database にはデータベース全体も入れておく（読み込むと足される）。
+ * players はプロジェクトの名簿。database にはデータベース全体も入れておく（読み込むと足される）。
  */
 export function bundleJson(s: AppState, p: Project): string {
   return JSON.stringify(
@@ -13,6 +13,8 @@ export function bundleJson(s: AppState, p: Project): string {
       schema_version: 2,
       app: "doubles_kun_mobile",
       name: p.name,
+      date: p.date,
+      place: p.place,
       created_at: p.created_at,
       updated_at: p.updated_at,
       exported_at: new Date().toISOString(),
@@ -28,7 +30,7 @@ export function bundleJson(s: AppState, p: Project): string {
   );
 }
 
-/** 会の参加者だけ。デスクトップ版のプロジェクトフォルダにそのまま置ける。 */
+/** プロジェクトの参加者だけ。デスクトップ版のプロジェクトフォルダにそのまま置ける。 */
 export function playersJson(s: AppState, p: Project): string {
   return JSON.stringify(memberPlayers(s, p), null, 2);
 }
@@ -61,12 +63,12 @@ export function parseImport(text: string): Imported {
   if (data && typeof data === "object") {
     const d = data as Record<string, unknown>;
     if (Array.isArray(d.players) || Array.isArray(d.matches) || d.engine_config || d.match_settings) {
-      // project.json 単体なら設定だけ読める。id は付け直す（同じ会を二重に開かないため）
+      // project.json 単体なら設定だけ読める。id は付け直す（同じプロジェクトを二重に開かないため）
       const { project, players } = projectFromJson({ ...d, id: undefined });
       const database = Array.isArray(d.database)
         ? (d.database as Record<string, unknown>[]).map(playerFromJson).filter((p): p is Player => p !== null)
         : [];
-      // データベース → 参加者の順で足す（参加者の方が新しい情報）
+      // データベース → 名簿の順で足す（名簿の方が新しい情報）
       return { kind: "bundle", project, players: [...database, ...players] };
     }
   }
