@@ -36,7 +36,6 @@ export function ProjectView(props: ViewProps) {
       <div class="topbar">
         <div>
           <h1>プロジェクト</h1>
-          <div class="sub">{seg === "project" ? <>{state.projects.length} 件・開いているのは「{project.name}」</> : <>登録 {state.db.length} 人。全プロジェクトで共通</>}</div>
         </div>
       </div>
 
@@ -76,10 +75,6 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
   return (
     <>
       <div class="card">
-        <div class="row between" style="margin-bottom:6px">
-          <h2 style="margin:0">一覧</h2>
-          <button class="btn small primary" onClick={() => setCreating(true)}>新しいプロジェクト</button>
-        </div>
         <div class="list">
           {sorted.map((p) => (
             <div class={"item" + (p.id === project.id ? " current" : "")} key={p.id} onClick={() => p.id !== project.id && update((s) => ({ ...s, current: p.id }))}>
@@ -88,16 +83,15 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
                 {p.id === project.id && <span class="pill on" style="margin-left:6px">開いている</span>}
                 <div class="muted">{describe(p)}</div>
               </span>
-              {p.id !== project.id && <span class="muted">開く ›</span>}
             </div>
           ))}
         </div>
+        <button class="btn block" style="margin-top:8px" onClick={() => setCreating(true)}>新しいプロジェクト</button>
       </div>
 
       <div class="card stack">
-        <h2>このプロジェクト</h2>
         <label>
-          <div class="muted">名前（書き出すファイル名に使う）</div>
+          <div class="muted">名前</div>
           <input type="text" value={project.name} onInput={(e) => updateProject((p) => ({ ...p, name: (e.target as HTMLInputElement).value }))} />
         </label>
         <div class="row">
@@ -110,9 +104,8 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
             <input type="text" placeholder="例: 第2体育館" value={project.place} onInput={(e) => updateProject((p) => ({ ...p, place: (e.target as HTMLInputElement).value }))} />
           </label>
         </div>
-        <div class="row between">
-          <span class="muted">{project.matches.length} 試合・設定は設定タブ</span>
-          <button class="btn small danger" onClick={remove}>このプロジェクトを削除</button>
+        <div class="row" style="justify-content:flex-end">
+          <button class="btn small danger" onClick={remove}>削除</button>
         </div>
       </div>
 
@@ -122,7 +115,7 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
           <button class="btn small primary" onClick={() => (state.db.length ? setPicking(true) : onGoDb())}>データベースから選ぶ</button>
         </div>
         {members.length === 0 ? (
-          <div class="empty">まだ名簿がありません。データベースから選ぶか、「データベース」で登録してください。</div>
+          <div class="empty">名簿がありません</div>
         ) : (
           <div class="list">
             {members.map((p) => (
@@ -138,7 +131,6 @@ function ProjectPane({ state, project, update, updateProject, notify, onEdit, on
             ))}
           </div>
         )}
-        <div class="muted" style="margin-top:6px">名簿に入れた人がメンバータブに出ます。集計も名簿の人だけが対象です。</div>
       </div>
 
       {creating && <NewProjectSheet project={project} update={update} notify={notify} onClose={() => setCreating(false)} />}
@@ -201,10 +193,7 @@ function NewProjectSheet({ project, update, notify, onClose }: { project: Projec
         {project.members.length > 0 && (
           <label class="check">
             <input type="checkbox" checked={inherit} onChange={(e) => setInherit((e.target as HTMLInputElement).checked)} />
-            <span>
-              「{project.name}」の名簿（{project.members.length} 人）を引き継ぐ
-              <div class="muted">設定はいつも引き継ぎます。試合は引き継ぎません</div>
-            </span>
+            名簿を引き継ぐ（{project.members.length} 人）
           </label>
         )}
         <div class="row" style="justify-content:flex-end">
@@ -259,7 +248,7 @@ function RosterPickSheet({ state, project, update, notify, onClose }: { state: V
       <div class="stack">
         <input type="text" placeholder="名前や所属で絞り込み" value={query} onInput={(e) => setQuery((e.target as HTMLInputElement).value)} />
         <div class="list" style="max-height:45dvh; overflow:auto">
-          {candidates.length === 0 && <div class="empty">{q ? "見つかりません。下で登録できます。" : "データベースの全員がもう名簿に入っています。"}</div>}
+          {candidates.length === 0 && <div class="empty">該当なし</div>}
           {candidates.map((p) => (
             <label class="item check" key={p.name} style="min-height:44px">
               <input type="checkbox" checked={picked.has(p.name)} onChange={() => toggle(p.name)} />
@@ -272,7 +261,7 @@ function RosterPickSheet({ state, project, update, notify, onClose }: { state: V
           ))}
         </div>
         <div class="row">
-          <input class="grow" type="text" placeholder="いない人を新しく登録（レート 1500）" value={newName} onInput={(e) => setNewName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && register()} />
+          <input class="grow" type="text" placeholder="新しく登録" value={newName} onInput={(e) => setNewName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && register()} />
           <button class="btn" onClick={register} disabled={!newName.trim()}>登録</button>
         </div>
         <div class="row" style="justify-content:flex-end">
@@ -335,17 +324,15 @@ function DatabasePane({ state, project, update, notify, memberSet, onToggleMembe
           <input type="number" style="width:88px" inputMode="numeric" value={newRating} onInput={(e) => setNewRating((e.target as HTMLInputElement).value)} />
           <button class="btn primary" onClick={addPlayer} disabled={!newName.trim()}>登録</button>
         </div>
-        <div class="muted" style="margin-top:6px">右の数字はレート。分からなければ 1500 のままで、あとから直せます。登録した人は「{project.name}」の名簿に入ります。</div>
       </div>
 
       {state.db.length === 0 ? (
-        <div class="empty">まだ誰も登録されていません。上で名前を登録するか、設定タブから players.json を読み込んでください。</div>
+        <div class="empty">登録がありません</div>
       ) : (
         <div class="card list">
           {state.db.length > 8 && <input type="text" placeholder="名前や所属で絞り込み" value={query} onInput={(e) => setQuery((e.target as HTMLInputElement).value)} style="margin-bottom:4px" />}
-          <div class="muted" style="padding:4px">右のボタンで「{project.name}」の名簿に入れる／外す。名前をタップで編集。</div>
           {active.map(row)}
-          {active.length === 0 && <div class="empty">見つかりません。</div>}
+          {active.length === 0 && <div class="empty">該当なし</div>}
         </div>
       )}
 

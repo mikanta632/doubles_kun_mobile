@@ -73,26 +73,23 @@ export function PlayerEditSheet({ player, state, project, update, notify, onRemo
           <input type="text" value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
         </label>
         <label>
-          <div class="muted">レート（初期値。現在は {Math.round(player.rating)}）</div>
+          <div class="muted">レート</div>
           <input type="number" inputMode="numeric" value={rating} onInput={(e) => setRating((e.target as HTMLInputElement).value)} />
         </label>
         <div>
-          <div class="muted">所属（「同じ所属の人をペアにしない」に使う）</div>
+          <div class="muted">所属</div>
           <Wheel options={teamOptions} value={teamChoice} onChange={setTeamChoice} />
           {teamChoice === NEW_TEAM && (
             <input type="text" placeholder="所属を入力" value={teamText} onInput={(e) => setTeamText((e.target as HTMLInputElement).value)} style="margin-top:6px" />
           )}
         </div>
         <label class="check">
-          <input type="checkbox" checked={active} onChange={(e) => setActive((e.target as HTMLInputElement).checked)} />
-          <span>
-            現在のメンバー
-            <div class="muted">外すと休会中になり、試合の候補に入らなくなります</div>
-          </span>
+          <input type="checkbox" checked={!active} onChange={(e) => setActive(!(e.target as HTMLInputElement).checked)} />
+          休会中
         </label>
         {onRemove && isMember && (
           <button class="btn block" onClick={() => { onRemove(player.name); if (!playedHere) onClose(); }} disabled={playedHere}>
-            「{project.name}」の名簿から外す{playedHere && "（試合に出ているため不可）"}
+            名簿から外す
           </button>
         )}
         <div class="row between">

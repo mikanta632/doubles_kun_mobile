@@ -32,7 +32,7 @@ export function UpdateCard(props: { autoCheck?: boolean }) {
   return (
     <div class="card stack">
       <h2>このアプリ</h2>
-      <div class="muted">現在のバージョン: {describe(BUILD)}</div>
+      <div class="muted">{describe(BUILD)}</div>
       {message && <div class={check?.status === "newer" ? "" : "muted"}>{message}</div>}
       <div class="row wrap">
         <button class="btn" onClick={run} disabled={busy || applying}>更新を確認</button>
@@ -43,9 +43,7 @@ export function UpdateCard(props: { autoCheck?: boolean }) {
         )}
       </div>
       <div class="muted">
-        公開されている最新のバージョンと比べます。更新してもデータは消えません。
-        <br />
-        <a href="https://github.com/mikanta632/doubles_kun_mobile" target="_blank" rel="noopener">ソースコード（GitHub）</a>
+        <a href="https://github.com/mikanta632/doubles_kun_mobile" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
   );

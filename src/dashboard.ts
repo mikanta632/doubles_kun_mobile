@@ -131,8 +131,8 @@ export function buildDashboard(players: readonly Player[], allMatches: readonly 
       sub: waitingNames.length ? waitingNames.slice(0, 3).join("、") + (waitingNames.length > 3 ? "…" : "") : "待っている人はいません",
       level: level(waitingNow >= waitCap, waitingNow >= waitCap - 1),
     },
-    { key: "short_repeats", title: "再同席", value: String(summary?.short_repeats_total ?? 0), sub: "2 ラウンド以内に再び同席した組数", level: level(false, (summary?.short_repeats_total ?? 0) > 0) },
-    { key: "blowouts", title: "大差の試合", value: String(summary?.blowouts_total ?? 0), sub: `片方の勝率が ${Math.round(cfg.day_win_prob_min * 100)}% 未満だった試合`, level: level(false, (summary?.blowouts_total ?? 0) > 0) },
+    { key: "short_repeats", title: "再同席", value: String(summary?.short_repeats_total ?? 0), sub: "", level: level(false, (summary?.short_repeats_total ?? 0) > 0) },
+    { key: "blowouts", title: "大差の試合", value: String(summary?.blowouts_total ?? 0), sub: "", level: level(false, (summary?.blowouts_total ?? 0) > 0) },
   ];
 
   // 同席

@@ -66,7 +66,7 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
         <div>
           <h1>{project.name}</h1>
           <div class="sub">
-            試合に入れる人 {available.length} 人・コート {courts} 面{inPlay > 0 && `・進行中 ${inPlay}`}
+            {available.length} 人・{courts} 面{inPlay > 0 && `・進行中 ${inPlay}`}
           </div>
         </div>
         <button class="btn primary" onClick={propose} disabled={available.length < 4}>次の試合を組む</button>
@@ -89,7 +89,7 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
       )}
 
       {project.matches.length === 0 ? (
-        <div class="empty">まだ試合がありません。「次の試合を組む」から始めます。</div>
+        <div class="empty">試合がありません</div>
       ) : (
         <MatchList matches={project.matches} courts={courts} onOpen={setEditing} onReorder={reorder} />
       )}
@@ -269,10 +269,6 @@ function MatchList({ matches, courts, onOpen, onReorder }: { matches: Match[]; c
 
   return (
     <div class={"card matchlist" + (dragId ? " reordering" : "")} ref={listRef} onContextMenu={(e) => e.preventDefault()} onPointerMove={onPointerMove}>
-      <div class="row between" style="margin-bottom:4px">
-        <h2 style="margin:0">試合一覧</h2>
-        <span class="muted">{dragId ? "動かして順番を入れ替え" : "タップで結果・長押しで並べ替え"}</span>
-      </div>
       {items.map((it) =>
         it.kind === "round" ? (
           <div class="round-h" key={it.key}>ラウンド {it.round}</div>
@@ -359,7 +355,7 @@ function ResultSheet({ match, project, update, onClose }: ViewProps & { match: M
         </div>
         <label class="check">
           <input type="checkbox" checked={inPlay} onChange={(e) => setInPlay((e.target as HTMLInputElement).checked)} />
-          進行中（この 4 人は次の試合に入れない）
+          進行中
         </label>
         <div class="row between">
           <button class="btn danger" onClick={remove}>削除</button>

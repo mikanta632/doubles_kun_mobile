@@ -9,22 +9,19 @@ export function DashboardView({ state, project }: ViewProps) {
   const [seg, setSeg] = useState<Seg>("people");
   const d = useMemo(() => buildDashboard(memberPlayers(state, project), project.matches, project.config), [state, project]);
 
-  if (d.people.rows.length === 0) return <div class="empty">「{project.name}」の名簿がありません。プロジェクトタブで作ってください。</div>;
+  if (d.people.rows.length === 0) return <div class="empty">名簿がありません</div>;
 
   return (
     <>
       <div class="topbar">
-        <div>
-          <h1>集計</h1>
-          <div class="sub">{project.name}・名簿 {d.people.rows.length} 人</div>
-        </div>
+        <h1>集計</h1>
       </div>
       <div class="cards">
         {d.cards.map((c) => (
           <div class="c" key={c.key}>
             <div class="t">{c.title}</div>
             <div class={"v " + c.level}>{c.value}</div>
-            <div class="s">{c.sub}</div>
+            {c.sub && <div class="s">{c.sub}</div>}
           </div>
         ))}
       </div>
@@ -36,9 +33,6 @@ export function DashboardView({ state, project }: ViewProps) {
 
       {seg === "people" && (
         <div class="card">
-          <div class="muted" style="margin-bottom:6px">
-            出場回数の少ない順。色付きの欄は要注意（連続待ちが {d.people.meta.wait_cap} ラウンド以上、出場回数が最少で差が大きい、大差の試合が続いている）。
-          </div>
           <div class="tablewrap">
             <table>
               <thead>
@@ -67,7 +61,6 @@ export function DashboardView({ state, project }: ViewProps) {
 
       {seg === "contacts" && (
         <div class="card">
-          <div class="muted" style="margin-bottom:6px">同席回数（味方・相手を問わず）。レートの高い順。{CONTACT_ALERT} 回以上は赤。</div>
           <div class="tablewrap">
             <table>
               <thead>
@@ -133,7 +126,6 @@ export function DashboardView({ state, project }: ViewProps) {
 
       {seg === "ranking" && (
         <div class="card">
-          <div class="muted" style="margin-bottom:6px">勝率、得失ゲーム差、勝数の順に並べています。</div>
           <div class="tablewrap">
             <table>
               <thead>

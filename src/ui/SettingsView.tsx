@@ -5,7 +5,6 @@ import { DEFAULT_CONFIG } from "../core/config";
 import { newMatch } from "../core/models";
 import { estimatePairModel, estimateSummary, isConclusive } from "../core/pairModelEstimator";
 import { planSummary, type PlanResult } from "../core/planOptimizer";
-import { gameWinProb, ratingDiffForProb } from "../core/winModel";
 import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareText, todayStamp } from "../io";
 import { addProject, availablePlayers, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
 import type { PlanMessage, PlanRequest } from "../planWorker";
@@ -85,15 +84,11 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
   };
 
   const band = Math.round(cfg.day_win_prob_min * 100);
-  const allow = ratingDiffForProb(1 - cfg.day_win_prob_min, cfg.game_scale);
 
   return (
     <>
       <div class="topbar">
-        <div>
-          <h1>設定</h1>
-          <div class="sub">「{project.name}」の設定。プロジェクトごとに保存されます</div>
-        </div>
+        <h1>設定</h1>
       </div>
 
       <div class="card stack">
@@ -114,7 +109,7 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
         </label>
         <label class="check">
           <input type="checkbox" checked={cfg.elo_auto_update} onChange={(e) => setCfg({ elo_auto_update: (e.target as HTMLInputElement).checked })} />
-          試合結果でレートを自動更新する（おすすめしません）
+          試合結果でレートを自動更新
         </label>
       </div>
 
@@ -124,7 +119,6 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
         <summary>詳細設定</summary>
         <div class="stack" style="margin-top:8px">
           <NumberField label="接戦とみなす 1 ゲーム勝率の下限（%）" value={band} min={20} max={50} onChange={(v) => setCfg({ day_win_prob_min: v / 100 })} />
-          <div class="muted">レート差 200 なら {Math.round(gameWinProb(200, 0, cfg.game_scale) * 100)}%。接戦の幅に収まるペア強度の差は ±{Math.round(allow)}。</div>
           <NumberField label="連続待ちの上限（ラウンド。0 は自動）" value={cfg.day_wait_cap} min={0} max={12} onChange={(v) => setCfg({ day_wait_cap: v })} />
           <NumberField label="上限が自動のときの余裕（ラウンド）" value={cfg.day_wait_slack} min={0} max={4} onChange={(v) => setCfg({ day_wait_slack: v })} />
           <NumberField label="出場回数の差の許容（回）" value={cfg.day_play_slack} min={0} max={2} onChange={(v) => setCfg({ day_play_slack: v })} />
@@ -148,17 +142,14 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
           <button class="btn grow" onClick={() => downloadText("players.json", playersJson(state, project))}>players.json</button>
           <button class="btn grow" onClick={() => downloadText("matches.json", matchesJson(project))}>matches.json</button>
         </div>
-        <div class="muted">「すべて書き出す」は「{project.name}」の名簿・試合・設定にデータベースを添えたもの。players.json（名簿）と matches.json はデスクトップ版のプロジェクトフォルダにそのまま置けます。</div>
         <div class="row wrap">
           <button class="btn" onClick={() => fileRef.current?.click()}>ファイルを読み込む</button>
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) onImport(f); (e.target as HTMLInputElement).value = ""; }} />
         </div>
-        <div class="muted">書き出したファイルはプロジェクトとして読み込まれます。players.json はデータベースに足して「{project.name}」の名簿に、matches.json はこのプロジェクトの試合になります。</div>
         <div class="row wrap">
           <button class="btn danger" onClick={() => { if (project.matches.length && confirm("試合をすべて消して新しい日を始めますか？（名簿は残ります）")) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>新しい日を始める</button>
           <button class="btn danger" onClick={() => { if (confirm("データベースもすべてのプロジェクトも消します。よろしいですか？")) { update(() => emptyState()); notify("すべて消しました。"); } }}>すべて削除</button>
         </div>
-        <div class="muted">データはこの端末のブラウザにだけ保存されます。会が終わったら書き出しておくと安心です。</div>
       </div>
 
       <UpdateCard />
@@ -233,9 +224,8 @@ function PlanCard({ state, project, updateProject, notify }: ViewProps) {
   return (
     <div class="card stack">
       <h2>まとめて組む</h2>
-      <div class="muted">参加者が決まっている会向け。一日分の組み合わせをまとめて最適化します（数十秒かかります）。1 試合ずつ組む方法と併用できます。</div>
       <div class="row">
-        <span class="grow">作る試合数（試合に入れる人 {available.length} 人）</span>
+        <span class="grow">試合数</span>
         <input type="number" style="width:88px" inputMode="numeric" min={1} max={200} value={count} onChange={(e) => setCount(Math.max(1, Math.min(200, Math.trunc(Number((e.target as HTMLInputElement).value)) || 1)))} />
       </div>
       {!running && !result && <button class="btn block" onClick={start} disabled={available.length < 4}>組み合わせを探す</button>}
@@ -248,7 +238,6 @@ function PlanCard({ state, project, updateProject, notify }: ViewProps) {
       {result && (
         <>
           <div style="white-space:pre-line">{planSummary({ ...result, matches: new Array(result.matches.length) as never })}</div>
-          {result.courts !== project.config.courts && <div class="muted">※ 試合に入れる人が {available.length} 人のため、同時に使えるのは {result.courts} 面までです。</div>}
           <div class="row">
             <button class="btn grow" onClick={() => setResult(null)}>やめる</button>
             <button class="btn primary grow" onClick={adopt}>この内容で追加</button>

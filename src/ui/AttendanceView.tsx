@@ -34,7 +34,7 @@ export function AttendanceView(props: ViewProps & { onGoProject: () => void }) {
       <div class="topbar">
         <div>
           <h1>メンバー</h1>
-          <div class="sub">「{project.name}」の名簿。試合に入れる人にチェック。{nSelected} / {members.length} 人</div>
+          <div class="sub">{nSelected} / {members.length} 人</div>
         </div>
         {members.length > 0 && (
           <div class="row">
@@ -46,32 +46,26 @@ export function AttendanceView(props: ViewProps & { onGoProject: () => void }) {
 
       {members.length === 0 ? (
         <div class="card">
-          <div class="empty">「{project.name}」の名簿がまだありません。</div>
-          <button class="btn primary block" onClick={onGoProject}>プロジェクトタブで名簿を作る</button>
+          <div class="empty">名簿がありません</div>
+          <button class="btn primary block" onClick={onGoProject}>名簿を作る</button>
         </div>
       ) : (
-        <>
-          <div class="card list">
-            {members.map((p) => (
-              <div class="item" key={p.name}>
-                <label class="check grow" style="min-height:0">
-                  <input type="checkbox" checked={p.active && selected.has(p.name)} disabled={!p.active} onChange={() => toggle(p.name)} />
-                  <span class="grow">
-                    <span style="font-weight:600">{p.name}</span>
-                    {p.team && <span class="pill" style="margin-left:6px">{p.team}</span>}
-                    {!p.active && <span class="pill" style="margin-left:6px">休会中</span>}
-                    <div class="muted">レート {Math.round(p.rating)}・出場 {plays.get(p.name) ?? 0} 回</div>
-                  </span>
-                </label>
-                <button class="btn small ghost" onClick={() => setEditing(p)}>編集</button>
-              </div>
-            ))}
-          </div>
-          <div class="row between">
-            <span class="muted">名簿の追加・削除はプロジェクトタブから</span>
-            <button class="btn small" onClick={onGoProject}>名簿を編集</button>
-          </div>
-        </>
+        <div class="card list">
+          {members.map((p) => (
+            <div class="item" key={p.name}>
+              <label class="check grow" style="min-height:0">
+                <input type="checkbox" checked={p.active && selected.has(p.name)} disabled={!p.active} onChange={() => toggle(p.name)} />
+                <span class="grow">
+                  <span style="font-weight:600">{p.name}</span>
+                  {p.team && <span class="pill" style="margin-left:6px">{p.team}</span>}
+                  {!p.active && <span class="pill" style="margin-left:6px">休会中</span>}
+                  <div class="muted">レート {Math.round(p.rating)}・出場 {plays.get(p.name) ?? 0} 回</div>
+                </span>
+              </label>
+              <button class="btn small ghost" onClick={() => setEditing(p)}>編集</button>
+            </div>
+          ))}
+        </div>
       )}
 
       {editing && <PlayerEditSheet {...props} player={editing} onRemove={removeMember} onClose={() => setEditing(null)} />}
