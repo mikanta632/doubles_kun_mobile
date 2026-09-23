@@ -56,14 +56,18 @@ describe("良い一日エンジン（貪欲法の再生）", () => {
     const rng = new PyRandom(sc.seed);
     const matches: Match[] = [];
     sc.steps.forEach((step: any, i: number) => {
+      // busy_last: 直前の試合がまだコートにある状態で次を組む
+      for (let j = 0; j < matches.length; j++) matches[j] = { ...matches[j], in_play: sc.busy_last && j === matches.length - 1 };
+      const busy = new Set(matches.filter((m) => m.in_play).flatMap((m) => [...m.team_a, ...m.team_b]));
+      const candidates = players.filter((p) => !busy.has(p.name));
       const inPlay = matches.filter((m) => m.in_play).length;
-      const engine = new GoodDayEngine(players, matches, {
+      const engine = new GoodDayEngine(candidates, matches, {
         config: cfg,
         courts: cfg.courts,
         freeCourts: Math.max(1, cfg.courts - inPlay),
         allPlayers: players,
         rng,
-        plays: countPlays(players, matches),
+        plays: countPlays(candidates, matches),
       });
       const props = engine.generateMatches(sc.rating_match, sc.avoid_same_team);
       expect(props.slice(0, 6).map(names), `step ${i}`).toEqual(step.proposals);
@@ -147,5 +151,9 @@ describe("Elo・指標・推定", () => {
       expect(isConclusive(est!)).toBe(conclusive);
       expect(differsFromHalf(est!)).toBe(differs_from_half);
     }
+
+    const fixed = estimatePairModel(matches, ratings0, 700);
+    if (sv.estimate_fixed_700 === null) expect(fixed).toBeNull();
+    else for (const [k, v] of Object.entries(sv.estimate_fixed_700)) expect(fixed![k as keyof typeof fixed], k).toBeCloseTo(v as number, 6);
   });
 });

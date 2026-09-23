@@ -77,16 +77,22 @@ function logLikelihood(samples: Sample[], p: number, g: number): number {
   return total;
 }
 
-export function estimatePairModel(matches: readonly Match[], ratings: Map<string, number>): PairModelEstimate | null {
+/**
+ * 試合結果から p を推定する。使える試合がなければ null。
+ * gameScale を渡すと G をその値に固定して p だけを推定する。設定に反映するときはこちらを使う
+ * （G ごとに最適な p は違うので、G を一緒に推定した p を別の G の設定に入れると、どちらの最適値でもなくなる）。
+ */
+export function estimatePairModel(matches: readonly Match[], ratings: Map<string, number>, gameScale?: number): PairModelEstimate | null {
   const samples = collectSamples(matches, ratings);
   if (samples.length === 0) return null;
   const nGames = samples.reduce((a, s) => a + s[4] + s[5], 0);
+  const gRange = gameScale === undefined ? G_RANGE : [gameScale];
 
   const profile: [number, number, number][] = [];
   for (const p of P_RANGE) {
-    let bestG = G_RANGE[0];
+    let bestG = gRange[0];
     let bestLl = -Infinity;
-    for (const g of G_RANGE) {
+    for (const g of gRange) {
       const ll = logLikelihood(samples, p, g);
       if (ll > bestLl) {
         bestLl = ll;
@@ -100,7 +106,7 @@ export function estimatePairModel(matches: readonly Match[], ratings: Map<string
   const [pHat, gHat, llMax] = best;
   const inside = profile.filter((e) => e[2] >= llMax - CHI2_95_HALF).map((e) => e[0]);
   let llHalf = -Infinity;
-  for (const g of G_RANGE) llHalf = Math.max(llHalf, logLikelihood(samples, 0.5, g));
+  for (const g of gRange) llHalf = Math.max(llHalf, logLikelihood(samples, 0.5, g));
 
   return {
     weak_weight: pHat,

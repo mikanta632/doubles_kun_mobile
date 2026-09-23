@@ -205,11 +205,16 @@ export function memberPlayers(s: AppState, p: Project = currentProject(s)): Play
 }
 
 /** 出場候補（名簿にいて、試合に入れるチェックが付いていて、いま試合中でない人）。 */
+/** 出場候補（いまコートに入っている人も含む）。一括計画で使う */
+export function attendingPlayers(s: AppState, p: Project = currentProject(s)): Player[] {
+  const sel = new Set(p.selected);
+  return memberPlayers(s, p).filter((x) => x.active && sel.has(x.name));
+}
+
 export function availablePlayers(s: AppState, p: Project = currentProject(s)): Player[] {
   const inPlay = new Set<string>();
   for (const m of p.matches) if (m.in_play) for (const n of [...m.team_a, ...m.team_b]) inPlay.add(n);
-  const sel = new Set(p.selected);
-  return memberPlayers(s, p).filter((x) => x.active && sel.has(x.name) && !inPlay.has(x.name));
+  return attendingPlayers(s, p).filter((x) => !inPlay.has(x.name));
 }
 
 export function playedIn(p: Project, name: string): boolean {

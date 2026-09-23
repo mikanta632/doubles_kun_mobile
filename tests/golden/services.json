@@ -17,92 +17,6 @@
   },
   "metrics": {
    "persons": {
-    "P00": {
-     "plays": 7,
-     "max_wait": 3,
-     "current_wait": 1,
-     "blowouts": 2,
-     "partners": [
-      "P05",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P11"
-     ],
-     "opponents": [
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10"
-     ],
-     "mixed_matches": 7,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P04": {
-     "plays": 6,
-     "max_wait": 3,
-     "current_wait": 2,
-     "blowouts": 0,
-     "partners": [
-      "P01",
-      "P03",
-      "P06",
-      "P09",
-      "P10",
-      "P11"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P05",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P11"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 1
-    },
-    "P08": {
-     "plays": 7,
-     "max_wait": 5,
-     "current_wait": 0,
-     "blowouts": 2,
-     "partners": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P06",
-      "P07",
-      "P09"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P11"
-     ],
-     "mixed_matches": 7,
-     "short_repeats": 0,
-     "band": 2
-    },
     "P06": {
      "plays": 7,
      "max_wait": 3,
@@ -124,6 +38,36 @@
       "P03",
       "P05",
       "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11"
+     ],
+     "mixed_matches": 7,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P07": {
+     "plays": 7,
+     "max_wait": 4,
+     "current_wait": 0,
+     "blowouts": 1,
+     "partners": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P05",
+      "P08",
+      "P09"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P06",
       "P08",
       "P09",
       "P10",
@@ -160,6 +104,35 @@
      "short_repeats": 0,
      "band": 2
     },
+    "P00": {
+     "plays": 7,
+     "max_wait": 3,
+     "current_wait": 1,
+     "blowouts": 2,
+     "partners": [
+      "P05",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11"
+     ],
+     "opponents": [
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08",
+      "P09",
+      "P10"
+     ],
+     "mixed_matches": 7,
+     "short_repeats": 0,
+     "band": 0
+    },
     "P02": {
      "plays": 6,
      "max_wait": 4,
@@ -188,19 +161,19 @@
      "short_repeats": 0,
      "band": 0
     },
-    "P05": {
+    "P08": {
      "plays": 7,
-     "max_wait": 3,
-     "current_wait": 3,
-     "blowouts": 1,
+     "max_wait": 5,
+     "current_wait": 0,
+     "blowouts": 2,
      "partners": [
       "P00",
+      "P01",
       "P02",
       "P03",
       "P06",
       "P07",
-      "P09",
-      "P10"
+      "P09"
      ],
      "opponents": [
       "P00",
@@ -208,15 +181,42 @@
       "P02",
       "P03",
       "P04",
+      "P05",
       "P06",
-      "P08",
-      "P09",
-      "P10",
+      "P07",
       "P11"
      ],
      "mixed_matches": 7,
      "short_repeats": 0,
-     "band": 1
+     "band": 2
+    },
+    "P10": {
+     "plays": 6,
+     "max_wait": 4,
+     "current_wait": 4,
+     "blowouts": 1,
+     "partners": [
+      "P00",
+      "P01",
+      "P02",
+      "P04",
+      "P05",
+      "P09"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P09",
+      "P11"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
     },
     "P01": {
      "plays": 7,
@@ -276,47 +276,19 @@
      "short_repeats": 0,
      "band": 0
     },
-    "P10": {
-     "plays": 6,
-     "max_wait": 4,
-     "current_wait": 4,
+    "P05": {
+     "plays": 7,
+     "max_wait": 3,
+     "current_wait": 3,
      "blowouts": 1,
      "partners": [
       "P00",
-      "P01",
       "P02",
-      "P04",
-      "P05",
-      "P09"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P04",
-      "P05",
+      "P03",
       "P06",
       "P07",
       "P09",
-      "P11"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 2
-    },
-    "P07": {
-     "plays": 7,
-     "max_wait": 4,
-     "current_wait": 0,
-     "blowouts": 1,
-     "partners": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P05",
-      "P08",
-      "P09"
+      "P10"
      ],
      "opponents": [
       "P00",
@@ -331,6 +303,34 @@
       "P11"
      ],
      "mixed_matches": 7,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P04": {
+     "plays": 6,
+     "max_wait": 3,
+     "current_wait": 2,
+     "blowouts": 0,
+     "partners": [
+      "P01",
+      "P03",
+      "P06",
+      "P09",
+      "P10",
+      "P11"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P05",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11"
+     ],
+     "mixed_matches": 6,
      "short_repeats": 0,
      "band": 1
     },
@@ -382,92 +382,6 @@
   },
   "metrics_elo": {
    "persons": {
-    "P00": {
-     "plays": 7,
-     "max_wait": 3,
-     "current_wait": 1,
-     "blowouts": 2,
-     "partners": [
-      "P05",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P11"
-     ],
-     "opponents": [
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10"
-     ],
-     "mixed_matches": 7,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P04": {
-     "plays": 6,
-     "max_wait": 3,
-     "current_wait": 2,
-     "blowouts": 1,
-     "partners": [
-      "P01",
-      "P03",
-      "P06",
-      "P09",
-      "P10",
-      "P11"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P05",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P11"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 1
-    },
-    "P08": {
-     "plays": 7,
-     "max_wait": 5,
-     "current_wait": 0,
-     "blowouts": 2,
-     "partners": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P06",
-      "P07",
-      "P09"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P11"
-     ],
-     "mixed_matches": 7,
-     "short_repeats": 0,
-     "band": 2
-    },
     "P06": {
      "plays": 7,
      "max_wait": 3,
@@ -489,6 +403,36 @@
       "P03",
       "P05",
       "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11"
+     ],
+     "mixed_matches": 7,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P07": {
+     "plays": 7,
+     "max_wait": 4,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P05",
+      "P08",
+      "P09"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P06",
       "P08",
       "P09",
       "P10",
@@ -525,6 +469,35 @@
      "short_repeats": 0,
      "band": 2
     },
+    "P00": {
+     "plays": 7,
+     "max_wait": 3,
+     "current_wait": 1,
+     "blowouts": 2,
+     "partners": [
+      "P05",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11"
+     ],
+     "opponents": [
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08",
+      "P09",
+      "P10"
+     ],
+     "mixed_matches": 7,
+     "short_repeats": 0,
+     "band": 0
+    },
     "P02": {
      "plays": 6,
      "max_wait": 4,
@@ -553,19 +526,19 @@
      "short_repeats": 0,
      "band": 0
     },
-    "P05": {
+    "P08": {
      "plays": 7,
-     "max_wait": 3,
-     "current_wait": 3,
-     "blowouts": 1,
+     "max_wait": 5,
+     "current_wait": 0,
+     "blowouts": 2,
      "partners": [
       "P00",
+      "P01",
       "P02",
       "P03",
       "P06",
       "P07",
-      "P09",
-      "P10"
+      "P09"
      ],
      "opponents": [
       "P00",
@@ -573,15 +546,42 @@
       "P02",
       "P03",
       "P04",
+      "P05",
       "P06",
-      "P08",
-      "P09",
-      "P10",
+      "P07",
       "P11"
      ],
      "mixed_matches": 7,
      "short_repeats": 0,
-     "band": 1
+     "band": 2
+    },
+    "P10": {
+     "plays": 6,
+     "max_wait": 4,
+     "current_wait": 4,
+     "blowouts": 1,
+     "partners": [
+      "P00",
+      "P01",
+      "P02",
+      "P04",
+      "P05",
+      "P09"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P09",
+      "P11"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
     },
     "P01": {
      "plays": 7,
@@ -641,47 +641,19 @@
      "short_repeats": 0,
      "band": 0
     },
-    "P10": {
-     "plays": 6,
-     "max_wait": 4,
-     "current_wait": 4,
+    "P05": {
+     "plays": 7,
+     "max_wait": 3,
+     "current_wait": 3,
      "blowouts": 1,
      "partners": [
       "P00",
-      "P01",
       "P02",
-      "P04",
-      "P05",
-      "P09"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P04",
-      "P05",
+      "P03",
       "P06",
       "P07",
       "P09",
-      "P11"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 2
-    },
-    "P07": {
-     "plays": 7,
-     "max_wait": 4,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P05",
-      "P08",
-      "P09"
+      "P10"
      ],
      "opponents": [
       "P00",
@@ -696,6 +668,34 @@
       "P11"
      ],
      "mixed_matches": 7,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P04": {
+     "plays": 6,
+     "max_wait": 3,
+     "current_wait": 2,
+     "blowouts": 1,
+     "partners": [
+      "P01",
+      "P03",
+      "P06",
+      "P09",
+      "P10",
+      "P11"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P05",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11"
+     ],
+     "mixed_matches": 6,
      "short_repeats": 0,
      "band": 1
     },
@@ -775,130 +775,50 @@
    "log_likelihood_half": -121.75928753039184,
    "conclusive": false,
    "differs_from_half": false
+  },
+  "estimate_fixed_700": {
+   "weak_weight": 0.49,
+   "ci_low": 0.12,
+   "ci_high": 0.86,
+   "game_scale": 700.0,
+   "log_likelihood": -123.3101752715057,
+   "log_likelihood_half": -123.31171638055984
   }
  },
  {
   "name": "16p_2c",
   "elo_after": {
-   "P00": 1159.67,
-   "P01": 1251.35,
-   "P02": 1316.48,
-   "P03": 1299.56,
-   "P04": 1342.54,
-   "P05": 1325.48,
-   "P06": 1347.46,
-   "P07": 1424.4,
-   "P08": 1460.07,
-   "P09": 1448.88,
-   "P10": 1572.64,
-   "P11": 1649.17,
-   "P12": 1605.11,
-   "P13": 1693.53,
-   "P14": 1662.6,
-   "P15": 1641.06
+   "P00": 1158.42,
+   "P01": 1196.43,
+   "P02": 1311.97,
+   "P03": 1303.31,
+   "P04": 1328.84,
+   "P05": 1374.26,
+   "P06": 1364.26,
+   "P07": 1480.84,
+   "P08": 1465.62,
+   "P09": 1410.57,
+   "P10": 1617.3,
+   "P11": 1640.1,
+   "P12": 1597.85,
+   "P13": 1624.5,
+   "P14": 1672.09,
+   "P15": 1653.64
   },
   "metrics": {
    "persons": {
-    "P00": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P06",
-      "P10",
-      "P11",
-      "P13",
-      "P14",
-      "P15"
-     ],
-     "opponents": [
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P12"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P04": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 1,
-     "partners": [
-      "P05",
-      "P08",
-      "P09",
-      "P11",
-      "P12",
-      "P13"
-     ],
-     "opponents": [
-      "P00",
-      "P02",
-      "P03",
-      "P06",
-      "P07",
-      "P08",
-      "P10",
-      "P14",
-      "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P08": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 2,
-     "partners": [
-      "P03",
-      "P04",
-      "P07",
-      "P09",
-      "P12",
-      "P15"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P04",
-      "P05",
-      "P07",
-      "P10",
-      "P11",
-      "P12",
-      "P13",
-      "P14",
-      "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 1
-    },
     "P06": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P00",
+      "P01",
+      "P04",
       "P07",
       "P09",
-      "P10",
       "P11",
-      "P14"
+      "P12"
      ],
      "opponents": [
       "P00",
@@ -906,8 +826,9 @@
       "P02",
       "P03",
       "P04",
-      "P09",
-      "P12",
+      "P08",
+      "P10",
+      "P11",
       "P13",
       "P14",
       "P15"
@@ -916,66 +837,39 @@
      "short_repeats": 0,
      "band": 1
     },
-    "P12": {
-     "plays": 6,
-     "max_wait": 1,
-     "current_wait": 1,
-     "blowouts": 1,
-     "partners": [
-      "P01",
-      "P03",
-      "P04",
-      "P05",
-      "P08",
-      "P09"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P06",
-      "P08",
-      "P10",
-      "P11",
-      "P13",
-      "P14",
-      "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 2
-    },
-    "P14": {
+    "P07": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 0,
-     "blowouts": 1,
+     "blowouts": 0,
      "partners": [
-      "P00",
       "P01",
-      "P02",
-      "P03",
       "P06",
-      "P07"
+      "P11",
+      "P12",
+      "P14",
+      "P15"
      ],
      "opponents": [
+      "P00",
+      "P02",
+      "P03",
       "P04",
-      "P05",
-      "P06",
-      "P07",
       "P08",
       "P09",
-      "P11",
-      "P12"
+      "P10",
+      "P12",
+      "P13",
+      "P14"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
-     "band": 2
+     "band": 1
     },
     "P11": {
      "plays": 6,
      "max_wait": 2,
-     "current_wait": 1,
+     "current_wait": 0,
      "blowouts": 0,
      "partners": [
       "P00",
@@ -989,11 +883,40 @@
       "P01",
       "P02",
       "P03",
+      "P04",
       "P05",
-      "P07",
+      "P06",
       "P08",
       "P09",
       "P12",
+      "P14",
+      "P15"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P12": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08"
+     ],
+     "opponents": [
+      "P01",
+      "P02",
+      "P03",
+      "P07",
+      "P08",
+      "P09",
+      "P11",
       "P13",
       "P14",
       "P15"
@@ -1002,29 +925,32 @@
      "short_repeats": 0,
      "band": 2
     },
-    "P02": {
+    "P00": {
      "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
+     "max_wait": 1,
+     "current_wait": 1,
      "blowouts": 0,
      "partners": [
-      "P01",
-      "P07",
-      "P09",
+      "P10",
+      "P11",
+      "P12",
       "P13",
       "P14",
       "P15"
      ],
      "opponents": [
-      "P00",
       "P01",
+      "P02",
       "P03",
       "P04",
       "P05",
       "P06",
+      "P07",
+      "P08",
+      "P09",
       "P10",
-      "P11",
-      "P12"
+      "P13",
+      "P15"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
@@ -1034,116 +960,117 @@
      "plays": 6,
      "max_wait": 2,
      "current_wait": 1,
-     "blowouts": 1,
+     "blowouts": 0,
      "partners": [
       "P00",
       "P01",
       "P02",
       "P03",
-      "P08",
-      "P09"
+      "P04",
+      "P07"
      ],
      "opponents": [
-      "P01",
-      "P03",
-      "P04",
+      "P00",
       "P05",
       "P06",
       "P08",
+      "P09",
       "P10",
       "P11",
       "P12",
-      "P13"
+      "P13",
+      "P14"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 2
     },
-    "P05": {
+    "P02": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 1,
      "blowouts": 0,
      "partners": [
+      "P03",
+      "P09",
+      "P10",
+      "P13",
+      "P14",
+      "P15"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P03",
       "P04",
+      "P05",
+      "P06",
       "P07",
+      "P08",
+      "P11",
+      "P12"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P14": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P07",
+      "P09"
+     ],
+     "opponents": [
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08",
+      "P09",
       "P10",
       "P11",
+      "P12",
+      "P15"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P08": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P01",
+      "P03",
+      "P05",
+      "P10",
       "P12",
       "P13"
      ],
      "opponents": [
       "P00",
+      "P01",
       "P02",
-      "P03",
-      "P08",
-      "P09",
-      "P10",
+      "P06",
+      "P07",
       "P11",
+      "P12",
+      "P13",
       "P14",
       "P15"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 1
-    },
-    "P01": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 1,
-     "partners": [
-      "P02",
-      "P10",
-      "P12",
-      "P13",
-      "P14",
-      "P15"
-     ],
-     "opponents": [
-      "P00",
-      "P02",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P11",
-      "P12",
-      "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P03": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
-      "P08",
-      "P10",
-      "P12",
-      "P13",
-      "P14",
-      "P15"
-     ],
-     "opponents": [
-      "P00",
-      "P02",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P09",
-      "P10",
-      "P11",
-      "P13",
-      "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 0
     },
     "P10": {
      "plays": 6,
@@ -1152,56 +1079,27 @@
      "blowouts": 0,
      "partners": [
       "P00",
-      "P01",
+      "P02",
       "P03",
       "P05",
-      "P06",
+      "P08",
       "P11"
      ],
      "opponents": [
       "P00",
-      "P02",
       "P03",
       "P04",
       "P05",
+      "P06",
       "P07",
-      "P08",
       "P09",
-      "P12",
       "P13",
+      "P14",
       "P15"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 2
-    },
-    "P07": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 1,
-     "partners": [
-      "P02",
-      "P05",
-      "P06",
-      "P08",
-      "P11",
-      "P14"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P03",
-      "P04",
-      "P08",
-      "P10",
-      "P11",
-      "P13",
-      "P14"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 1
     },
     "P13": {
      "plays": 6,
@@ -1213,17 +1111,18 @@
       "P01",
       "P02",
       "P03",
-      "P04",
-      "P05"
+      "P08",
+      "P09"
      ],
      "opponents": [
+      "P00",
       "P03",
+      "P04",
+      "P05",
       "P06",
       "P07",
       "P08",
-      "P09",
       "P10",
-      "P11",
       "P12",
       "P15"
      ],
@@ -1231,29 +1130,146 @@
      "short_repeats": 0,
      "band": 2
     },
-    "P09": {
+    "P01": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P06",
+      "P07",
+      "P08",
+      "P13",
+      "P14",
+      "P15"
+     ],
+     "opponents": [
+      "P00",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P08",
+      "P09",
+      "P11",
+      "P12"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P03": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 1,
      "blowouts": 0,
      "partners": [
       "P02",
-      "P04",
-      "P06",
       "P08",
+      "P10",
+      "P13",
+      "P14",
+      "P15"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P09",
+      "P10",
+      "P11",
+      "P12",
+      "P13"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P05": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P04",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P12"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P10",
+      "P11",
+      "P13",
+      "P14",
+      "P15"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P04": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P05",
+      "P06",
+      "P09",
+      "P11",
       "P12",
       "P15"
      ],
      "opponents": [
       "P00",
       "P01",
+      "P02",
       "P03",
-      "P05",
       "P06",
+      "P07",
       "P10",
       "P11",
       "P13",
       "P14"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P09": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P02",
+      "P04",
+      "P05",
+      "P06",
+      "P13",
+      "P14"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P03",
+      "P07",
+      "P10",
+      "P11",
+      "P12",
+      "P14",
+      "P15"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
@@ -1263,13 +1279,13 @@
    "summary": {
     "plays_spread": 0,
     "wait_worst": 2,
-    "blowouts_total": 2,
-    "blowouts_worst": 2,
-    "weak_side_worst": 5,
-    "contacts_worst": 12,
-    "contacts_mean": 13.5,
-    "contacts_edge_mean": 13.727272727272727,
-    "contacts_mid_mean": 13.0,
+    "blowouts_total": 0,
+    "blowouts_worst": 0,
+    "weak_side_worst": 6,
+    "contacts_worst": 13,
+    "contacts_mean": 14.0,
+    "contacts_edge_mean": 14.181818181818182,
+    "contacts_mid_mean": 13.6,
     "mixing_worst": 1.0,
     "mixing_mean": 1.0,
     "short_repeats_total": 0
@@ -1278,106 +1294,18 @@
   },
   "metrics_elo": {
    "persons": {
-    "P00": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P06",
-      "P10",
-      "P11",
-      "P13",
-      "P14",
-      "P15"
-     ],
-     "opponents": [
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P12"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P04": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P05",
-      "P08",
-      "P09",
-      "P11",
-      "P12",
-      "P13"
-     ],
-     "opponents": [
-      "P00",
-      "P02",
-      "P03",
-      "P06",
-      "P07",
-      "P08",
-      "P10",
-      "P14",
-      "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P08": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 1,
-     "partners": [
-      "P03",
-      "P04",
-      "P07",
-      "P09",
-      "P12",
-      "P15"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P04",
-      "P05",
-      "P07",
-      "P10",
-      "P11",
-      "P12",
-      "P13",
-      "P14",
-      "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 1
-    },
     "P06": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 0,
-     "blowouts": 0,
+     "blowouts": 1,
      "partners": [
-      "P00",
+      "P01",
+      "P04",
       "P07",
       "P09",
-      "P10",
       "P11",
-      "P14"
+      "P12"
      ],
      "opponents": [
       "P00",
@@ -1385,8 +1313,9 @@
       "P02",
       "P03",
       "P04",
-      "P09",
-      "P12",
+      "P08",
+      "P10",
+      "P11",
       "P13",
       "P14",
       "P15"
@@ -1395,67 +1324,40 @@
      "short_repeats": 0,
      "band": 1
     },
-    "P12": {
-     "plays": 6,
-     "max_wait": 1,
-     "current_wait": 1,
-     "blowouts": 1,
-     "partners": [
-      "P01",
-      "P03",
-      "P04",
-      "P05",
-      "P08",
-      "P09"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P06",
-      "P08",
-      "P10",
-      "P11",
-      "P13",
-      "P14",
-      "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 2
-    },
-    "P14": {
+    "P07": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P00",
       "P01",
-      "P02",
-      "P03",
       "P06",
-      "P07"
+      "P11",
+      "P12",
+      "P14",
+      "P15"
      ],
      "opponents": [
+      "P00",
+      "P02",
+      "P03",
       "P04",
-      "P05",
-      "P06",
-      "P07",
       "P08",
       "P09",
-      "P11",
-      "P12"
+      "P10",
+      "P12",
+      "P13",
+      "P14"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
-     "band": 2
+     "band": 1
     },
     "P11": {
      "plays": 6,
      "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 1,
+     "current_wait": 0,
+     "blowouts": 2,
      "partners": [
       "P00",
       "P04",
@@ -1468,11 +1370,40 @@
       "P01",
       "P02",
       "P03",
+      "P04",
       "P05",
-      "P07",
+      "P06",
       "P08",
       "P09",
       "P12",
+      "P14",
+      "P15"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P12": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08"
+     ],
+     "opponents": [
+      "P01",
+      "P02",
+      "P03",
+      "P07",
+      "P08",
+      "P09",
+      "P11",
       "P13",
       "P14",
       "P15"
@@ -1481,29 +1412,32 @@
      "short_repeats": 0,
      "band": 2
     },
-    "P02": {
+    "P00": {
      "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
+     "max_wait": 1,
+     "current_wait": 1,
      "blowouts": 0,
      "partners": [
-      "P01",
-      "P07",
-      "P09",
+      "P10",
+      "P11",
+      "P12",
       "P13",
       "P14",
       "P15"
      ],
      "opponents": [
-      "P00",
       "P01",
+      "P02",
       "P03",
       "P04",
       "P05",
       "P06",
+      "P07",
+      "P08",
+      "P09",
       "P10",
-      "P11",
-      "P12"
+      "P13",
+      "P15"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
@@ -1513,7 +1447,152 @@
      "plays": 6,
      "max_wait": 2,
      "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P07"
+     ],
+     "opponents": [
+      "P00",
+      "P05",
+      "P06",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P12",
+      "P13",
+      "P14"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P02": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P03",
+      "P09",
+      "P10",
+      "P13",
+      "P14",
+      "P15"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08",
+      "P11",
+      "P12"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P14": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P07",
+      "P09"
+     ],
+     "opponents": [
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P12",
+      "P15"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P08": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P01",
+      "P03",
+      "P05",
+      "P10",
+      "P12",
+      "P13"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P06",
+      "P07",
+      "P11",
+      "P12",
+      "P13",
+      "P14",
+      "P15"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P10": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
      "blowouts": 1,
+     "partners": [
+      "P00",
+      "P02",
+      "P03",
+      "P05",
+      "P08",
+      "P11"
+     ],
+     "opponents": [
+      "P00",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P09",
+      "P13",
+      "P14",
+      "P15"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P13": {
+     "plays": 6,
+     "max_wait": 1,
+     "current_wait": 1,
+     "blowouts": 0,
      "partners": [
       "P00",
       "P01",
@@ -1523,58 +1602,30 @@
       "P09"
      ],
      "opponents": [
-      "P01",
+      "P00",
       "P03",
       "P04",
       "P05",
       "P06",
+      "P07",
       "P08",
       "P10",
-      "P11",
       "P12",
-      "P13"
+      "P15"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 2
     },
-    "P05": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
-      "P04",
-      "P07",
-      "P10",
-      "P11",
-      "P12",
-      "P13"
-     ],
-     "opponents": [
-      "P00",
-      "P02",
-      "P03",
-      "P08",
-      "P09",
-      "P10",
-      "P11",
-      "P14",
-      "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 1
-    },
     "P01": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 0,
-     "blowouts": 2,
+     "blowouts": 1,
      "partners": [
-      "P02",
-      "P10",
-      "P12",
+      "P06",
+      "P07",
+      "P08",
       "P13",
       "P14",
       "P15"
@@ -1582,13 +1633,14 @@
      "opponents": [
       "P00",
       "P02",
+      "P03",
+      "P04",
+      "P05",
       "P06",
-      "P07",
       "P08",
       "P09",
       "P11",
-      "P12",
-      "P15"
+      "P12"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
@@ -1600,15 +1652,16 @@
      "current_wait": 1,
      "blowouts": 0,
      "partners": [
+      "P02",
       "P08",
       "P10",
-      "P12",
       "P13",
       "P14",
       "P15"
      ],
      "opponents": [
       "P00",
+      "P01",
       "P02",
       "P04",
       "P05",
@@ -1617,122 +1670,93 @@
       "P09",
       "P10",
       "P11",
-      "P13",
-      "P15"
+      "P12",
+      "P13"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 0
     },
-    "P10": {
+    "P05": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 1,
-     "blowouts": 0,
+     "blowouts": 1,
      "partners": [
-      "P00",
-      "P01",
-      "P03",
-      "P05",
-      "P06",
-      "P11"
+      "P04",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P12"
      ],
      "opponents": [
       "P00",
+      "P01",
       "P02",
       "P03",
-      "P04",
-      "P05",
-      "P07",
-      "P08",
-      "P09",
-      "P12",
+      "P10",
+      "P11",
       "P13",
+      "P14",
       "P15"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
-     "band": 2
+     "band": 1
     },
-    "P07": {
+    "P04": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 1,
+     "partners": [
+      "P05",
+      "P06",
+      "P09",
+      "P11",
+      "P12",
+      "P15"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P06",
+      "P07",
+      "P10",
+      "P11",
+      "P13",
+      "P14"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P09": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 0,
      "blowouts": 1,
      "partners": [
       "P02",
+      "P04",
       "P05",
       "P06",
-      "P08",
-      "P11",
-      "P14"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P03",
-      "P04",
-      "P08",
-      "P10",
-      "P11",
       "P13",
       "P14"
      ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 1
-    },
-    "P13": {
-     "plays": 6,
-     "max_wait": 1,
-     "current_wait": 1,
-     "blowouts": 1,
-     "partners": [
+     "opponents": [
       "P00",
       "P01",
-      "P02",
       "P03",
-      "P04",
-      "P05"
-     ],
-     "opponents": [
-      "P03",
-      "P06",
       "P07",
-      "P08",
-      "P09",
       "P10",
       "P11",
       "P12",
+      "P14",
       "P15"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 2
-    },
-    "P09": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
-      "P02",
-      "P04",
-      "P06",
-      "P08",
-      "P12",
-      "P15"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P03",
-      "P05",
-      "P06",
-      "P10",
-      "P11",
-      "P13",
-      "P14"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
@@ -1744,11 +1768,11 @@
     "wait_worst": 2,
     "blowouts_total": 2,
     "blowouts_worst": 2,
-    "weak_side_worst": 5,
-    "contacts_worst": 12,
-    "contacts_mean": 13.5,
-    "contacts_edge_mean": 13.727272727272727,
-    "contacts_mid_mean": 13.0,
+    "weak_side_worst": 6,
+    "contacts_worst": 13,
+    "contacts_mean": 14.0,
+    "contacts_edge_mean": 14.181818181818182,
+    "contacts_mid_mean": 13.6,
     "mixing_worst": 1.0,
     "mixing_mean": 1.0,
     "short_repeats_total": 0
@@ -1757,16 +1781,16 @@
   },
   "wait_cap": 4,
   "cutoffs": [
-   1342.54,
-   1572.64
+   1364.26,
+   1597.85
   ],
   "bands": {
    "P00": 0,
    "P01": 0,
    "P02": 0,
    "P03": 0,
-   "P04": 1,
-   "P05": 0,
+   "P04": 0,
+   "P05": 1,
    "P06": 1,
    "P07": 1,
    "P08": 1,
@@ -1779,165 +1803,173 @@
    "P15": 2
   },
   "estimate": {
-   "weak_weight": 0.48,
+   "weak_weight": 0.58,
    "ci_low": 0.1,
    "ci_high": 0.9,
-   "game_scale": 850.0,
+   "game_scale": 1400.0,
    "n_matches": 24,
-   "n_games": 219,
-   "log_likelihood": -150.84625627370505,
-   "log_likelihood_half": -150.85146144895936,
+   "n_games": 225,
+   "log_likelihood": -155.70066060595158,
+   "log_likelihood_half": -155.72315942561085,
    "conclusive": false,
    "differs_from_half": false
+  },
+  "estimate_fixed_700": {
+   "weak_weight": 0.57,
+   "ci_low": 0.2,
+   "ci_high": 0.9,
+   "game_scale": 700.0,
+   "log_likelihood": -155.96774987096492,
+   "log_likelihood_half": -156.03450090211643
   }
  },
  {
   "name": "20p_3c",
   "elo_after": {
-   "P00": 1163.79,
-   "P01": 1226.67,
-   "P02": 1214.22,
-   "P03": 1284.0,
-   "P04": 1341.75,
-   "P05": 1416.64,
-   "P06": 1318.21,
-   "P07": 1254.88,
-   "P08": 1405.41,
-   "P09": 1528.23,
-   "P10": 1507.1,
-   "P11": 1399.09,
-   "P12": 1554.22,
-   "P13": 1536.12,
-   "P14": 1515.87,
-   "P15": 1597.69,
-   "P16": 1589.7,
-   "P17": 1684.81,
-   "P18": 1715.64,
-   "P19": 1745.96
+   "P00": 1150.2,
+   "P01": 1179.3,
+   "P02": 1247.09,
+   "P03": 1287.35,
+   "P04": 1400.8,
+   "P05": 1389.91,
+   "P06": 1358.96,
+   "P07": 1392.72,
+   "P08": 1448.7,
+   "P09": 1477.92,
+   "P10": 1375.21,
+   "P11": 1404.64,
+   "P12": 1474.01,
+   "P13": 1546.73,
+   "P14": 1560.24,
+   "P15": 1630.92,
+   "P16": 1623.23,
+   "P17": 1679.62,
+   "P18": 1715.38,
+   "P19": 1657.07
   },
   "metrics": {
    "persons": {
-    "P04": {
+    "P07": {
      "plays": 6,
      "max_wait": 2,
-     "current_wait": 1,
+     "current_wait": 2,
      "blowouts": 0,
      "partners": [
-      "P01",
-      "P13",
-      "P14",
-      "P15",
-      "P18",
-      "P19"
-     ],
-     "opponents": [
-      "P00",
-      "P02",
-      "P03",
-      "P06",
-      "P07",
-      "P09",
+      "P08",
       "P10",
       "P11",
       "P12",
       "P14",
-      "P16",
-      "P17"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P02": {
-     "plays": 6,
-     "max_wait": 1,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P03",
-      "P13",
-      "P14",
-      "P15",
-      "P16",
-      "P19"
-     ],
-     "opponents": [
-      "P01",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P11",
-      "P12",
-      "P17"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P16": {
-     "plays": 6,
-     "max_wait": 1,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P08",
       "P15"
      ],
      "opponents": [
-      "P04",
+      "P00",
+      "P01",
+      "P02",
+      "P03",
       "P05",
+      "P06",
+      "P13",
+      "P16",
+      "P17",
+      "P18",
+      "P19"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P10": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P02",
+      "P03",
       "P07",
       "P09",
-      "P10",
       "P12",
-      "P13",
+      "P13"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P04",
+      "P05",
+      "P06",
+      "P11",
       "P14",
+      "P16",
       "P17",
       "P18",
       "P19"
      ],
      "mixed_matches": 5,
      "short_repeats": 0,
-     "band": 2
+     "band": 1
     },
-    "P08": {
+    "P05": {
      "plays": 6,
-     "max_wait": 1,
-     "current_wait": 0,
+     "max_wait": 2,
+     "current_wait": 1,
      "blowouts": 0,
      "partners": [
-      "P05",
-      "P07",
-      "P09",
-      "P11",
-      "P16",
-      "P17"
+      "P01",
+      "P12",
+      "P13",
+      "P17",
+      "P18",
+      "P19"
      ],
      "opponents": [
+      "P04",
+      "P06",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P12",
+      "P14",
+      "P15",
+      "P16"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P15": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
       "P00",
-      "P01",
       "P02",
+      "P04",
+      "P07",
+      "P09",
+      "P16"
+     ],
+     "opponents": [
+      "P01",
       "P03",
+      "P04",
       "P05",
       "P06",
+      "P08",
       "P11",
       "P12",
       "P13",
       "P14",
-      "P18",
+      "P17",
       "P19"
      ],
      "mixed_matches": 5,
-     "short_repeats": 1,
-     "band": 1
+     "short_repeats": 0,
+     "band": 2
     },
     "P18": {
      "plays": 6,
@@ -1947,118 +1979,87 @@
      "partners": [
       "P00",
       "P01",
-      "P03",
+      "P02",
       "P04",
       "P05",
-      "P10"
+      "P08"
      ],
      "opponents": [
       "P03",
       "P06",
       "P07",
-      "P08",
+      "P09",
+      "P10",
       "P11",
       "P12",
       "P13",
       "P14",
-      "P15",
       "P16",
-      "P17"
+      "P19"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 2
     },
-    "P12": {
+    "P16": {
      "plays": 6,
      "max_wait": 2,
-     "current_wait": 1,
+     "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P06",
-      "P07",
-      "P09",
-      "P10",
-      "P13",
-      "P14"
-     ],
-     "opponents": [
       "P00",
-      "P01",
-      "P02",
-      "P04",
-      "P05",
-      "P08",
-      "P11",
-      "P15",
-      "P16",
-      "P17",
-      "P18"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 1
-    },
-    "P14": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
       "P02",
       "P03",
-      "P04",
-      "P07",
+      "P06",
       "P11",
-      "P12"
+      "P15"
      ],
      "opponents": [
-      "P00",
-      "P01",
+      "P03",
       "P04",
       "P05",
-      "P06",
+      "P07",
       "P08",
       "P09",
       "P10",
-      "P15",
-      "P16",
-      "P18"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 2
-    },
-    "P13": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
-      "P01",
-      "P02",
-      "P04",
-      "P07",
       "P12",
-      "P17"
-     ],
-     "opponents": [
-      "P00",
-      "P03",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P15",
-      "P16",
+      "P14",
+      "P17",
       "P18",
       "P19"
      ],
      "mixed_matches": 5,
      "short_repeats": 0,
      "band": 2
+    },
+    "P01": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P05",
+      "P12",
+      "P14",
+      "P17",
+      "P18",
+      "P19"
+     ],
+     "opponents": [
+      "P00",
+      "P02",
+      "P06",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P13",
+      "P15"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
     },
     "P17": {
      "plays": 6,
@@ -2066,184 +2067,92 @@
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P00",
-      "P05",
-      "P06",
-      "P08",
-      "P09",
-      "P13"
-     ],
-     "opponents": [
       "P01",
       "P02",
       "P03",
+      "P05",
+      "P08",
+      "P14"
+     ],
+     "opponents": [
+      "P00",
       "P04",
+      "P06",
+      "P07",
+      "P09",
       "P10",
       "P11",
       "P12",
+      "P13",
       "P15",
       "P16",
-      "P18",
       "P19"
      ],
      "mixed_matches": 5,
      "short_repeats": 0,
      "band": 2
     },
-    "P06": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 2,
-     "blowouts": 0,
-     "partners": [
-      "P05",
-      "P07",
-      "P10",
-      "P12",
-      "P15",
-      "P17"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P08",
-      "P09",
-      "P11",
-      "P13",
-      "P14",
-      "P18",
-      "P19"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 1
-    },
     "P11": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P00",
-      "P03",
-      "P05",
-      "P08",
-      "P09",
-      "P14"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P04",
-      "P05",
-      "P06",
-      "P08",
-      "P12",
-      "P15",
-      "P17",
-      "P18",
-      "P19"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 1,
-     "band": 1
-    },
-    "P01": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
-      "P04",
-      "P13",
-      "P15",
-      "P16",
-      "P18",
-      "P19"
-     ],
-     "opponents": [
-      "P02",
-      "P03",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P11",
-      "P12",
-      "P14",
-      "P17"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P03": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P02",
-      "P11",
-      "P14",
-      "P16",
-      "P18",
-      "P19"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P04",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P13",
-      "P15",
-      "P17",
-      "P18"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P07": {
      "plays": 6,
      "max_wait": 1,
      "current_wait": 1,
      "blowouts": 0,
      "partners": [
+      "P03",
       "P06",
+      "P07",
       "P08",
-      "P10",
       "P12",
-      "P13",
-      "P14"
+      "P16"
      ],
      "opponents": [
       "P00",
       "P01",
       "P02",
-      "P03",
       "P04",
       "P05",
       "P09",
-      "P13",
+      "P10",
+      "P14",
       "P15",
-      "P16",
+      "P17",
       "P18",
       "P19"
      ],
-     "mixed_matches": 6,
+     "mixed_matches": 5,
      "short_repeats": 0,
      "band": 1
+    },
+    "P04": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P03",
+      "P09",
+      "P14",
+      "P15",
+      "P18",
+      "P19"
+     ],
+     "opponents": [
+      "P00",
+      "P02",
+      "P05",
+      "P06",
+      "P08",
+      "P10",
+      "P11",
+      "P12",
+      "P13",
+      "P15",
+      "P16",
+      "P17"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
     },
     "P09": {
      "plays": 6,
@@ -2251,24 +2160,85 @@
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P00",
+      "P04",
       "P08",
       "P10",
+      "P13",
+      "P14",
+      "P15"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P05",
+      "P06",
+      "P11",
+      "P16",
+      "P17",
+      "P18",
+      "P19"
+     ],
+     "mixed_matches": 5,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P06": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 2,
+     "blowouts": 0,
+     "partners": [
+      "P08",
       "P11",
       "P12",
-      "P17"
+      "P13",
+      "P16",
+      "P19"
      ],
      "opponents": [
       "P01",
       "P02",
       "P03",
       "P04",
+      "P05",
+      "P07",
+      "P09",
+      "P10",
+      "P14",
+      "P15",
+      "P17",
+      "P18"
+     ],
+     "mixed_matches": 5,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P12": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P01",
+      "P05",
       "P06",
       "P07",
+      "P10",
+      "P11"
+     ],
+     "opponents": [
+      "P00",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
       "P13",
       "P14",
+      "P15",
       "P16",
-      "P19"
+      "P17",
+      "P18"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
@@ -2280,26 +2250,142 @@
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P09",
-      "P11",
+      "P13",
+      "P14",
+      "P15",
       "P16",
-      "P17",
       "P18",
       "P19"
      ],
      "opponents": [
+      "P01",
       "P03",
       "P04",
-      "P05",
-      "P06",
       "P07",
       "P08",
+      "P09",
       "P10",
       "P11",
       "P12",
+      "P17"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P14": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P01",
+      "P04",
+      "P07",
+      "P09",
+      "P17"
+     ],
+     "opponents": [
+      "P02",
+      "P03",
+      "P05",
+      "P06",
+      "P10",
+      "P11",
+      "P12",
+      "P15",
+      "P16",
+      "P18",
+      "P19"
+     ],
+     "mixed_matches": 5,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P08": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P06",
+      "P07",
+      "P09",
+      "P11",
+      "P17",
+      "P18"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P13",
+      "P15",
+      "P16",
+      "P19"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P13": {
+     "plays": 6,
+     "max_wait": 1,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P02",
+      "P05",
+      "P06",
+      "P09",
+      "P10"
+     ],
+     "opponents": [
+      "P01",
+      "P03",
+      "P04",
+      "P07",
+      "P08",
+      "P12",
+      "P15",
+      "P17",
+      "P18",
+      "P19"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P03": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P04",
+      "P10",
+      "P11",
+      "P16",
+      "P17",
+      "P19"
+     ],
+     "opponents": [
+      "P00",
+      "P02",
+      "P06",
+      "P07",
+      "P08",
+      "P12",
       "P13",
       "P14",
-      "P15"
+      "P15",
+      "P16",
+      "P18"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
@@ -2313,117 +2399,57 @@
      "partners": [
       "P00",
       "P01",
-      "P02",
       "P03",
       "P04",
-      "P05"
+      "P05",
+      "P06"
      ],
      "opponents": [
-      "P06",
       "P07",
       "P08",
       "P09",
       "P10",
       "P11",
       "P13",
+      "P14",
       "P15",
       "P16",
-      "P17"
+      "P17",
+      "P18"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 2
     },
-    "P15": {
+    "P02": {
      "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
-      "P01",
-      "P02",
-      "P04",
-      "P06",
-      "P10",
-      "P16"
-     ],
-     "opponents": [
-      "P00",
-      "P03",
-      "P05",
-      "P07",
-      "P11",
-      "P12",
-      "P13",
-      "P14",
-      "P17",
-      "P18",
-      "P19"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 2
-    },
-    "P05": {
-     "plays": 6,
-     "max_wait": 2,
+     "max_wait": 1,
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P06",
-      "P08",
-      "P11",
+      "P10",
+      "P13",
+      "P15",
+      "P16",
       "P17",
-      "P18",
-      "P19"
+      "P18"
      ],
      "opponents": [
-      "P00",
       "P01",
-      "P02",
+      "P03",
+      "P04",
+      "P06",
       "P07",
       "P08",
+      "P09",
       "P10",
       "P11",
       "P12",
-      "P13",
-      "P14",
-      "P15",
-      "P16"
+      "P14"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 0
-    },
-    "P10": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P06",
-      "P07",
-      "P09",
-      "P12",
-      "P15",
-      "P18"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P13",
-      "P14",
-      "P16",
-      "P17",
-      "P19"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 1
     }
    },
    "summary": {
@@ -2431,261 +2457,230 @@
     "wait_worst": 2,
     "blowouts_total": 0,
     "blowouts_worst": 0,
-    "weak_side_worst": 5,
-    "contacts_worst": 15,
+    "weak_side_worst": 6,
+    "contacts_worst": 16,
     "contacts_mean": 16.7,
-    "contacts_edge_mean": 16.76923076923077,
-    "contacts_mid_mean": 16.571428571428573,
+    "contacts_edge_mean": 16.615384615384617,
+    "contacts_mid_mean": 16.857142857142858,
     "mixing_worst": 0.8333333333333334,
-    "mixing_mean": 0.9,
-    "short_repeats_total": 1
+    "mixing_mean": 0.9333333333333333,
+    "short_repeats_total": 0
    },
    "match_count": 30
   },
   "metrics_elo": {
    "persons": {
-    "P04": {
+    "P07": {
      "plays": 6,
      "max_wait": 2,
-     "current_wait": 1,
+     "current_wait": 2,
      "blowouts": 0,
      "partners": [
-      "P01",
-      "P13",
-      "P14",
-      "P15",
-      "P18",
-      "P19"
-     ],
-     "opponents": [
-      "P00",
-      "P02",
-      "P03",
-      "P06",
-      "P07",
-      "P09",
+      "P08",
       "P10",
       "P11",
       "P12",
       "P14",
-      "P16",
-      "P17"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P02": {
-     "plays": 6,
-     "max_wait": 1,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P03",
-      "P13",
-      "P14",
-      "P15",
-      "P16",
-      "P19"
-     ],
-     "opponents": [
-      "P01",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P11",
-      "P12",
-      "P17"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P16": {
-     "plays": 6,
-     "max_wait": 1,
-     "current_wait": 0,
-     "blowouts": 1,
-     "partners": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P08",
       "P15"
      ],
      "opponents": [
-      "P04",
+      "P00",
+      "P01",
+      "P02",
+      "P03",
       "P05",
+      "P06",
+      "P13",
+      "P16",
+      "P17",
+      "P18",
+      "P19"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P10": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P02",
+      "P03",
       "P07",
       "P09",
-      "P10",
       "P12",
-      "P13",
+      "P13"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P04",
+      "P05",
+      "P06",
+      "P11",
       "P14",
+      "P16",
       "P17",
       "P18",
       "P19"
      ],
      "mixed_matches": 5,
      "short_repeats": 0,
-     "band": 2
+     "band": 1
     },
-    "P08": {
+    "P05": {
      "plays": 6,
-     "max_wait": 1,
-     "current_wait": 0,
+     "max_wait": 2,
+     "current_wait": 1,
      "blowouts": 0,
      "partners": [
-      "P05",
-      "P07",
-      "P09",
-      "P11",
-      "P16",
-      "P17"
+      "P01",
+      "P12",
+      "P13",
+      "P17",
+      "P18",
+      "P19"
      ],
      "opponents": [
+      "P04",
+      "P06",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P12",
+      "P14",
+      "P15",
+      "P16"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P15": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
       "P00",
-      "P01",
       "P02",
+      "P04",
+      "P07",
+      "P09",
+      "P16"
+     ],
+     "opponents": [
+      "P01",
       "P03",
+      "P04",
       "P05",
       "P06",
+      "P08",
       "P11",
       "P12",
       "P13",
       "P14",
-      "P18",
+      "P17",
       "P19"
      ],
      "mixed_matches": 5,
-     "short_repeats": 1,
-     "band": 1
+     "short_repeats": 0,
+     "band": 2
     },
     "P18": {
      "plays": 6,
      "max_wait": 2,
      "current_wait": 0,
-     "blowouts": 1,
+     "blowouts": 0,
      "partners": [
       "P00",
       "P01",
-      "P03",
+      "P02",
       "P04",
       "P05",
-      "P10"
+      "P08"
      ],
      "opponents": [
       "P03",
       "P06",
       "P07",
-      "P08",
+      "P09",
+      "P10",
       "P11",
       "P12",
       "P13",
       "P14",
-      "P15",
       "P16",
-      "P17"
+      "P19"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 2
     },
-    "P12": {
+    "P16": {
      "plays": 6,
      "max_wait": 2,
-     "current_wait": 1,
+     "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P06",
-      "P07",
-      "P09",
-      "P10",
-      "P13",
-      "P14"
-     ],
-     "opponents": [
       "P00",
-      "P01",
-      "P02",
-      "P04",
-      "P05",
-      "P08",
-      "P11",
-      "P15",
-      "P16",
-      "P17",
-      "P18"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 1
-    },
-    "P14": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
       "P02",
       "P03",
-      "P04",
-      "P07",
+      "P06",
       "P11",
-      "P12"
+      "P15"
      ],
      "opponents": [
-      "P00",
-      "P01",
+      "P03",
       "P04",
       "P05",
-      "P06",
+      "P07",
       "P08",
       "P09",
       "P10",
-      "P15",
-      "P16",
-      "P18"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 2
-    },
-    "P13": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
-      "P01",
-      "P02",
-      "P04",
-      "P07",
       "P12",
-      "P17"
-     ],
-     "opponents": [
-      "P00",
-      "P03",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P15",
-      "P16",
+      "P14",
+      "P17",
       "P18",
       "P19"
      ],
      "mixed_matches": 5,
      "short_repeats": 0,
      "band": 2
+    },
+    "P01": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P05",
+      "P12",
+      "P14",
+      "P17",
+      "P18",
+      "P19"
+     ],
+     "opponents": [
+      "P00",
+      "P02",
+      "P06",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P13",
+      "P15"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
     },
     "P17": {
      "plays": 6,
@@ -2693,184 +2688,92 @@
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P00",
-      "P05",
-      "P06",
-      "P08",
-      "P09",
-      "P13"
-     ],
-     "opponents": [
       "P01",
       "P02",
       "P03",
+      "P05",
+      "P08",
+      "P14"
+     ],
+     "opponents": [
+      "P00",
       "P04",
+      "P06",
+      "P07",
+      "P09",
       "P10",
       "P11",
       "P12",
+      "P13",
       "P15",
       "P16",
-      "P18",
       "P19"
      ],
      "mixed_matches": 5,
      "short_repeats": 0,
      "band": 2
     },
-    "P06": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 2,
-     "blowouts": 0,
-     "partners": [
-      "P05",
-      "P07",
-      "P10",
-      "P12",
-      "P15",
-      "P17"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P08",
-      "P09",
-      "P11",
-      "P13",
-      "P14",
-      "P18",
-      "P19"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 1
-    },
     "P11": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 0,
-     "partners": [
-      "P00",
-      "P03",
-      "P05",
-      "P08",
-      "P09",
-      "P14"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P04",
-      "P05",
-      "P06",
-      "P08",
-      "P12",
-      "P15",
-      "P17",
-      "P18",
-      "P19"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 1,
-     "band": 1
-    },
-    "P01": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
-      "P04",
-      "P13",
-      "P15",
-      "P16",
-      "P18",
-      "P19"
-     ],
-     "opponents": [
-      "P02",
-      "P03",
-      "P05",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P11",
-      "P12",
-      "P14",
-      "P17"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P03": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 1,
-     "partners": [
-      "P02",
-      "P11",
-      "P14",
-      "P16",
-      "P18",
-      "P19"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P04",
-      "P06",
-      "P07",
-      "P08",
-      "P09",
-      "P10",
-      "P13",
-      "P15",
-      "P17",
-      "P18"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 0
-    },
-    "P07": {
      "plays": 6,
      "max_wait": 1,
      "current_wait": 1,
      "blowouts": 0,
      "partners": [
+      "P03",
       "P06",
+      "P07",
       "P08",
-      "P10",
       "P12",
-      "P13",
-      "P14"
+      "P16"
      ],
      "opponents": [
       "P00",
       "P01",
       "P02",
-      "P03",
       "P04",
       "P05",
       "P09",
-      "P13",
+      "P10",
+      "P14",
       "P15",
-      "P16",
+      "P17",
       "P18",
       "P19"
      ],
-     "mixed_matches": 6,
+     "mixed_matches": 5,
      "short_repeats": 0,
      "band": 1
+    },
+    "P04": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P03",
+      "P09",
+      "P14",
+      "P15",
+      "P18",
+      "P19"
+     ],
+     "opponents": [
+      "P00",
+      "P02",
+      "P05",
+      "P06",
+      "P08",
+      "P10",
+      "P11",
+      "P12",
+      "P13",
+      "P15",
+      "P16",
+      "P17"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
     },
     "P09": {
      "plays": 6,
@@ -2878,24 +2781,85 @@
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P00",
+      "P04",
       "P08",
       "P10",
+      "P13",
+      "P14",
+      "P15"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P05",
+      "P06",
+      "P11",
+      "P16",
+      "P17",
+      "P18",
+      "P19"
+     ],
+     "mixed_matches": 5,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P06": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 2,
+     "blowouts": 0,
+     "partners": [
+      "P08",
       "P11",
       "P12",
-      "P17"
+      "P13",
+      "P16",
+      "P19"
      ],
      "opponents": [
       "P01",
       "P02",
       "P03",
       "P04",
+      "P05",
+      "P07",
+      "P09",
+      "P10",
+      "P14",
+      "P15",
+      "P17",
+      "P18"
+     ],
+     "mixed_matches": 5,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P12": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P01",
+      "P05",
       "P06",
       "P07",
+      "P10",
+      "P11"
+     ],
+     "opponents": [
+      "P00",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
       "P13",
       "P14",
+      "P15",
       "P16",
-      "P19"
+      "P17",
+      "P18"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
@@ -2907,26 +2871,142 @@
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P09",
-      "P11",
+      "P13",
+      "P14",
+      "P15",
       "P16",
-      "P17",
       "P18",
       "P19"
      ],
      "opponents": [
+      "P01",
       "P03",
       "P04",
-      "P05",
-      "P06",
       "P07",
       "P08",
+      "P09",
       "P10",
       "P11",
       "P12",
+      "P17"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 0
+    },
+    "P14": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 1,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P01",
+      "P04",
+      "P07",
+      "P09",
+      "P17"
+     ],
+     "opponents": [
+      "P02",
+      "P03",
+      "P05",
+      "P06",
+      "P10",
+      "P11",
+      "P12",
+      "P15",
+      "P16",
+      "P18",
+      "P19"
+     ],
+     "mixed_matches": 5,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P08": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P06",
+      "P07",
+      "P09",
+      "P11",
+      "P17",
+      "P18"
+     ],
+     "opponents": [
+      "P00",
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P13",
+      "P15",
+      "P16",
+      "P19"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 1
+    },
+    "P13": {
+     "plays": 6,
+     "max_wait": 1,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P00",
+      "P02",
+      "P05",
+      "P06",
+      "P09",
+      "P10"
+     ],
+     "opponents": [
+      "P01",
+      "P03",
+      "P04",
+      "P07",
+      "P08",
+      "P12",
+      "P15",
+      "P17",
+      "P18",
+      "P19"
+     ],
+     "mixed_matches": 6,
+     "short_repeats": 0,
+     "band": 2
+    },
+    "P03": {
+     "plays": 6,
+     "max_wait": 2,
+     "current_wait": 0,
+     "blowouts": 0,
+     "partners": [
+      "P04",
+      "P10",
+      "P11",
+      "P16",
+      "P17",
+      "P19"
+     ],
+     "opponents": [
+      "P00",
+      "P02",
+      "P06",
+      "P07",
+      "P08",
+      "P12",
       "P13",
       "P14",
-      "P15"
+      "P15",
+      "P16",
+      "P18"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
@@ -2940,139 +3020,79 @@
      "partners": [
       "P00",
       "P01",
-      "P02",
       "P03",
       "P04",
-      "P05"
+      "P05",
+      "P06"
      ],
      "opponents": [
-      "P06",
       "P07",
       "P08",
       "P09",
       "P10",
       "P11",
       "P13",
+      "P14",
       "P15",
       "P16",
-      "P17"
+      "P17",
+      "P18"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 2
     },
-    "P15": {
+    "P02": {
      "plays": 6,
-     "max_wait": 2,
-     "current_wait": 1,
-     "blowouts": 0,
-     "partners": [
-      "P01",
-      "P02",
-      "P04",
-      "P06",
-      "P10",
-      "P16"
-     ],
-     "opponents": [
-      "P00",
-      "P03",
-      "P05",
-      "P07",
-      "P11",
-      "P12",
-      "P13",
-      "P14",
-      "P17",
-      "P18",
-      "P19"
-     ],
-     "mixed_matches": 5,
-     "short_repeats": 0,
-     "band": 2
-    },
-    "P05": {
-     "plays": 6,
-     "max_wait": 2,
+     "max_wait": 1,
      "current_wait": 0,
      "blowouts": 0,
      "partners": [
-      "P06",
-      "P08",
-      "P11",
+      "P10",
+      "P13",
+      "P15",
+      "P16",
       "P17",
-      "P18",
-      "P19"
+      "P18"
      ],
      "opponents": [
-      "P00",
       "P01",
-      "P02",
+      "P03",
+      "P04",
+      "P06",
       "P07",
       "P08",
+      "P09",
       "P10",
       "P11",
       "P12",
-      "P13",
-      "P14",
-      "P15",
-      "P16"
+      "P14"
      ],
      "mixed_matches": 6,
      "short_repeats": 0,
      "band": 0
-    },
-    "P10": {
-     "plays": 6,
-     "max_wait": 2,
-     "current_wait": 0,
-     "blowouts": 1,
-     "partners": [
-      "P06",
-      "P07",
-      "P09",
-      "P12",
-      "P15",
-      "P18"
-     ],
-     "opponents": [
-      "P00",
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P13",
-      "P14",
-      "P16",
-      "P17",
-      "P19"
-     ],
-     "mixed_matches": 6,
-     "short_repeats": 0,
-     "band": 1
     }
    },
    "summary": {
     "plays_spread": 0,
     "wait_worst": 2,
-    "blowouts_total": 1,
-    "blowouts_worst": 1,
-    "weak_side_worst": 5,
-    "contacts_worst": 15,
+    "blowouts_total": 0,
+    "blowouts_worst": 0,
+    "weak_side_worst": 6,
+    "contacts_worst": 16,
     "contacts_mean": 16.7,
-    "contacts_edge_mean": 16.76923076923077,
-    "contacts_mid_mean": 16.571428571428573,
+    "contacts_edge_mean": 16.615384615384617,
+    "contacts_mid_mean": 16.857142857142858,
     "mixing_worst": 0.8333333333333334,
-    "mixing_mean": 0.9,
-    "short_repeats_total": 1
+    "mixing_mean": 0.9333333333333333,
+    "short_repeats_total": 0
    },
    "match_count": 30
   },
   "wait_cap": 4,
   "cutoffs": [
-   1341.75,
-   1536.12
+   1389.91,
+   1546.73
   ],
   "bands": {
    "P00": 0,
@@ -3082,14 +3102,14 @@
    "P04": 1,
    "P05": 1,
    "P06": 0,
-   "P07": 0,
+   "P07": 1,
    "P08": 1,
    "P09": 1,
-   "P10": 1,
+   "P10": 0,
    "P11": 1,
-   "P12": 2,
+   "P12": 1,
    "P13": 2,
-   "P14": 1,
+   "P14": 2,
    "P15": 2,
    "P16": 2,
    "P17": 2,
@@ -3097,16 +3117,24 @@
    "P19": 2
   },
   "estimate": {
-   "weak_weight": 0.37,
-   "ci_low": 0.21,
-   "ci_high": 0.5,
-   "game_scale": 250.0,
+   "weak_weight": 0.46,
+   "ci_low": 0.1,
+   "ci_high": 0.9,
+   "game_scale": 800.0,
    "n_matches": 30,
-   "n_games": 275,
-   "log_likelihood": -185.90880413069368,
-   "log_likelihood_half": -187.81710756889234,
-   "conclusive": true,
+   "n_games": 286,
+   "log_likelihood": -197.6485819775533,
+   "log_likelihood_half": -197.67957017799426,
+   "conclusive": false,
    "differs_from_half": false
+  },
+  "estimate_fixed_700": {
+   "weak_weight": 0.46,
+   "ci_low": 0.17,
+   "ci_high": 0.75,
+   "game_scale": 700.0,
+   "log_likelihood": -197.65981702115047,
+   "log_likelihood_half": -197.6897934030865
   }
  }
 ]

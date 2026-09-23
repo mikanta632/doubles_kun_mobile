@@ -256,6 +256,8 @@ export class GoodDayEngine {
   ratingOf = new Map<string, number>();
   plays: Map<string, number>;
   ledger: DayLedger;
+  /** 出席者数（出場候補 + いまコートに入っている人） */
+  nAttending: number;
   cutoffs: number[];
   lastCandidates: DayCandidate[] = [];
 
@@ -270,37 +272,46 @@ export class GoodDayEngine {
     for (const p of this.players) this.ratingOf.set(p.name, p.rating);
     this.plays = opts.plays ?? countPlays(this.players, this.pastMatches);
     this.ledger = new DayLedger(this.pastMatches, this.courts);
-    this.cutoffs = bandCutoffs(this.players.map((p) => p.rating));
+    // 出席者 = 出場候補 + いまコートに入っている人。人数から決まる上限（連続待ち・
+    // 同席回数）と実力帯の境界はこれで数える。候補だけで数えると、コートが
+    // 使用中のあいだ人数が減って上限が急に下がる（10人2面で 4 → 1）。
+    const attending = new Set(this.players.map((p) => p.name));
+    for (const m of this.pastMatches) if (m.in_play) for (const n of [...m.team_a, ...m.team_b]) attending.add(n);
+    this.nAttending = attending.size;
+    const rs: number[] = [];
+    for (const n of attending) {
+      const r = this.ratingOf.get(n);
+      if (r !== undefined) rs.push(r);
+    }
+    this.cutoffs = bandCutoffs(rs);
   }
 
-  dyadCap(nPlayers = this.players.length): number {
+  dyadCap(nPlayers = this.nAttending): number {
     const total = (nPlayers * (nPlayers - 1)) / 2;
     if (total <= 0) return 99;
     const expected = (6 * this.ledger.turn) / total;
     return Math.max(2, Math.trunc(expected) + this.config.day_dyad_slack);
   }
 
-  waitCap(nPlayers = this.players.length): number {
+  waitCap(nPlayers = this.nAttending): number {
     return waitCapFor(this.config, nPlayers, this.courts);
   }
 
   generateMatches(ratingMatchOn = true, avoidSameTeamOn = true, allowOldPairs = true, maxMatches = 10): MatchPairing[] {
+    return this.generateCandidates(ratingMatchOn, avoidSameTeamOn, allowOldPairs, maxMatches).map((c) => c.match);
+  }
+
+  /** 提案を候補ごと返す（notesOf で諦めた点を出すときに、候補を探し直さずに済む） */
+  generateCandidates(ratingMatchOn = true, avoidSameTeamOn = true, allowOldPairs = true, maxMatches = 10): DayCandidate[] {
     const ranked = this.rank(ratingMatchOn, avoidSameTeamOn, allowOldPairs);
     this.lastCandidates = ranked;
-    let matches = this.diversify(ranked).map((c) => c.match);
-    if (maxMatches > 0) matches = matches.slice(0, maxMatches);
-    return matches;
+    const cands = this.diversify(ranked);
+    return maxMatches > 0 ? cands.slice(0, maxMatches) : cands;
   }
 
   explain(pairing: MatchPairing): string {
     const c = this.candidateOf(pairing);
     return c ? this.explainCandidate(c) : "";
-  }
-
-  /** この組み合わせで諦めた点を、ふつうの言葉で返す。何もなければ空。 */
-  notes(pairing: MatchPairing): string[] {
-    const c = this.candidateOf(pairing);
-    return c ? notesOf(c) : [];
   }
 
   private candidateOf(pairing: MatchPairing): DayCandidate | null {
@@ -365,16 +376,23 @@ export class GoodDayEngine {
     return score;
   }
 
+  /**
+   * 再抽選で同じ顔ぶれが続かないよう、上位を貪欲に並べ替える。
+   * 先頭は rank() の 1 位（複数コートでは先読みで選んだもの）のまま残し、2 番目以降を並べ替える。
+   * 先頭まで並べ替えると先読みの結果が消える。
+   */
   private diversify(ranked: DayCandidate[]): DayCandidate[] {
     if (ranked.length <= 1) return ranked;
     const pool = ranked.slice(0, GoodDayEngine.DIVERSITY_OUTPUT * 5);
     const tail = ranked.slice(pool.length);
     const totals = pool.map((c) => c.total);
     const penalty = Math.max(0.5, (Math.max(...totals) - Math.min(...totals)) / 3);
+    const head = pool[0];
     const usage = new Map<string, number>();
-    const result: DayCandidate[] = [];
-    const remaining = [...pool];
-    const n = Math.min(GoodDayEngine.DIVERSITY_OUTPUT, remaining.length);
+    for (const nm of head.four) usage.set(nm, 1);
+    const result: DayCandidate[] = [head];
+    const remaining = pool.slice(1);
+    const n = Math.min(GoodDayEngine.DIVERSITY_OUTPUT - 1, remaining.length);
     for (let i = 0; i < n; i++) {
       let bestIdx = 0;
       let bestKey: number[] | null = null;
@@ -415,7 +433,7 @@ export class GoodDayEngine {
       pool = keyed.slice(0, maxPool).map((x) => x.p);
     }
 
-    const cap = this.waitCap(nPlayers);
+    const cap = this.waitCap();
     const waiting = players
       .filter((p) => this.ledger.waitedRounds(p.name) >= cap)
       .map((p) => ({ p, k: -this.ledger.waitedRounds(p.name) }));
@@ -443,7 +461,7 @@ export class GoodDayEngine {
     const decay = this.config.day_recency_decay;
     const recentRounds = Math.max(0, this.config.day_recent_rounds);
     const weakWeight = this.config.pair_weak_weight;
-    const cap = this.dyadCap(this.players.length);
+    const cap = this.dyadCap();
     const cands: DayCandidate[] = [];
 
     for (const combo of combinations(others, k)) {
@@ -519,16 +537,14 @@ export class GoodDayEngine {
           if (a1.team && a1.team === a2.team) sameTeam++;
           if (b1.team && b1.team === b2.team) sameTeam++;
         }
-        if (!allowOldPairs) {
-          const ka = this.ledger.dyadLast.get(pairKey(a1.name, a2.name));
-          const kb = this.ledger.dyadLast.get(pairKey(b1.name, b2.name));
-          if ((ka && ka[1] === PARTNER) || (kb && kb[1] === PARTNER)) continue;
-        }
+        // 過去に組んだ回数。直近の関係（dyadLast）だけを見ると、
+        // 組んだあとに対戦した 2 人を「組んだことがない」と誤る
+        const partneredA = this.ledger.partnerCount.get(pairKey(a1.name, a2.name)) ?? 0;
+        const partneredB = this.ledger.partnerCount.get(pairKey(b1.name, b2.name)) ?? 0;
+        if (!allowOldPairs && (partneredA || partneredB)) continue;
         const failed = new Set(groupFailed);
         const exactRepeat = this.ledger.matchCount.get(matchKey([a1.name, a2.name], [b1.name, b2.name])) ?? 0;
-        const pairRepeat =
-          (this.ledger.partnerCount.get(pairKey(a1.name, a2.name)) ?? 0) +
-          (this.ledger.partnerCount.get(pairKey(b1.name, b2.name)) ?? 0);
+        const pairRepeat = partneredA + partneredB;
         let winProb = 0.5;
         let tie = 0;
         if (ratingMatchOn) {
@@ -583,7 +599,7 @@ export class GoodDayEngine {
     parts.push(`初対面 ${c.newContacts} 組`);
     if (c.bands) parts.push(`実力帯 ${c.bands} 種`);
     if (c.sameTeam) parts.push(`同じ所属のペア ${c.sameTeam} 組`);
-    if (c.exactRepeat) parts.push(`同じ組み合わせ ${c.exactRepeat} 回目`);
+    if (c.exactRepeat) parts.push(`同じ組み合わせ ${c.exactRepeat + 1} 回目`);
     return parts.join(" ／ ");
   }
 }

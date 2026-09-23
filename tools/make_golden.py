@@ -113,7 +113,8 @@ def outcome(rng, a1, a2, b1, b2, cfg):
 
 
 def replay_day(n, courts, seed, n_matches, *, teams=0, avoid_same_team=False, rating_match=True,
-               cfg_kw=None):
+               cfg_kw=None, busy_last=False):
+    """busy_last: 直前の試合がまだコートにある状態で次を組む（その 4 人は候補から外れる）。"""
     cfg = EngineConfig(courts=courts, **(cfg_kw or {}))
     players = make_players(n, teams=teams)
     rng = random.Random(seed)
@@ -127,8 +128,12 @@ def replay_day(n, courts, seed, n_matches, *, teams=0, avoid_same_team=False, ra
                 counts[nm] = counts.get(nm, 0) + 1
         for p in players:
             p.matches_played = counts.get(p.name, 0)
+        if busy_last and matches:
+            matches[-1].in_play = True
+        busy = {nm for m in matches if m.in_play for nm in m.all_players()}
+        candidates = [p for p in players if p.name not in busy]
         in_play = sum(1 for m in matches if m.in_play)
-        engine = GoodDayEngine(players, matches, config=cfg, courts=courts,
+        engine = GoodDayEngine(candidates, matches, config=cfg, courts=courts,
                                free_courts=max(1, courts - in_play), all_players=players, rng=rng)
         props = engine.generate_matches(rating_match_on=rating_match, avoid_same_team_on=avoid_same_team)
         if not props:
@@ -143,6 +148,8 @@ def replay_day(n, courts, seed, n_matches, *, teams=0, avoid_same_team=False, ra
         ga, gb = outcome(res_rng, a1, a2, b1, b2, cfg)
         m.games_a, m.games_b = ga, gb
         m.result = "A" if ga > gb else "B"
+        for old in matches:
+            old.in_play = False
         matches.append(m)
         steps.append({
             "proposals": [pairing_names(p) for p in top],
@@ -164,6 +171,8 @@ def golden_day_engine():
         dict(name="10p_1c_norating", n=10, courts=1, seed=6, n_matches=10, rating_match=False),
         dict(name="14p_2c_strict", n=14, courts=2, seed=7, n_matches=16,
              cfg_kw=dict(day_win_prob_min=0.45, day_play_slack=0, day_wait_slack=0)),
+        dict(name="10p_2c_busy", n=10, courts=2, seed=8, n_matches=14, busy_last=True),
+        dict(name="16p_3c_busy", n=16, courts=3, seed=9, n_matches=18, busy_last=True),
     ]
     out = []
     for sc in scenarios:
@@ -178,6 +187,7 @@ def golden_day_engine():
             "config": cfg.to_dict(),
             "avoid_same_team": sc.get("avoid_same_team", False),
             "rating_match": sc.get("rating_match", True),
+            "busy_last": sc.get("busy_last", False),
             "players": player_dicts(players),
             "steps": steps,
             "matches": [match_dict(m) for m in matches],
@@ -209,6 +219,14 @@ def golden_plan(day_cases):
     out.append({"name": "12p_1c_history", "n": 12, "courts": 1, "n_matches": 10, "seed": 15,
                 "set_iters": 3000, "order_iters": 1000, "players": player_dicts(players),
                 "past": [match_dict(m) for m in past], "result": plan_dict(r)})
+    # 既存の試合の続き（2 面）。最後の試合はまだコートにある
+    for name, n_past in (("12p_2c_continue_partial", 3), ("12p_2c_continue_full", 4)):
+        past = [Match.from_dict(d) for d in base["matches"][:n_past]]
+        past[-1].in_play = True
+        r = optimize_plan(players, past, 6, courts=2, seed=16, set_iters=3000, order_iters=1000)
+        out.append({"name": name, "n": 12, "courts": 2, "n_matches": 6, "seed": 16,
+                    "set_iters": 3000, "order_iters": 1000, "players": player_dicts(players),
+                    "past": [match_dict(m) for m in past], "result": plan_dict(r)})
     # 不成立
     out.append({"name": "too_few", "n": 3, "courts": 1, "n_matches": 5, "seed": 0,
                 "set_iters": 10, "order_iters": 10, "players": player_dicts(make_players(3)),
@@ -247,6 +265,7 @@ def golden_services(day_cases):
                                       game_scale=cfg.game_scale, weak_weight=cfg.pair_weak_weight,
                                       apply_elo=True)
         est = estimate(matches, ratings0)
+        est_fixed = estimate(matches, ratings0, game_scale=700.0)
         out.append({
             "name": case["name"],
             "elo_after": {p.name: p.rating for p in players},
@@ -260,6 +279,12 @@ def golden_services(day_cases):
                 "game_scale": est.game_scale, "n_matches": est.n_matches, "n_games": est.n_games,
                 "log_likelihood": est.log_likelihood, "log_likelihood_half": est.log_likelihood_half,
                 "conclusive": est.conclusive, "differs_from_half": est.differs_from_half,
+            },
+            "estimate_fixed_700": None if est_fixed is None else {
+                "weak_weight": est_fixed.weak_weight, "ci_low": est_fixed.ci_low,
+                "ci_high": est_fixed.ci_high, "game_scale": est_fixed.game_scale,
+                "log_likelihood": est_fixed.log_likelihood,
+                "log_likelihood_half": est_fixed.log_likelihood_half,
             },
         })
     dump("services", out)

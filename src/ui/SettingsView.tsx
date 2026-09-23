@@ -6,7 +6,7 @@ import { newMatch } from "../core/models";
 import { estimatePairModel, estimateSummary, isConclusive } from "../core/pairModelEstimator";
 import { planSummary, type PlanResult } from "../core/planOptimizer";
 import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareText, todayStamp } from "../io";
-import { addProject, availablePlayers, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
+import { addProject, attendingPlayers, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
 import type { PlanMessage, PlanRequest } from "../planWorker";
 import { UpdateCard } from "./UpdateCard";
 
@@ -22,7 +22,8 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
 
   const estimate = () => {
     const ratings = new Map(state.db.map((p) => [p.name, p.initial_rating]));
-    const e = estimatePairModel(project.matches, ratings);
+    // G は設定の値に固定して p だけを推定する（反映するのは p だけなので）
+    const e = estimatePairModel(project.matches, ratings, project.config.game_scale);
     if (!e) {
       notify("推定に使える試合がありません。ゲーム数の入った結果が必要です。");
       return;
@@ -179,7 +180,8 @@ function NumberField(props: { label: string; value: number; min: number; max: nu
 }
 
 function PlanCard({ state, project, updateProject, notify }: ViewProps) {
-  const available = availablePlayers(state, project);
+  // いまコートに入っている人も含める（計画の最初のラウンドからは外れる）
+  const available = attendingPlayers(state, project);
   const [count, setCount] = useState(Math.max(1, Math.round(available.length * 1.5)));
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);

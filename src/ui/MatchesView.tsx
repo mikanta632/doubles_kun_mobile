@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
-import { GoodDayEngine } from "../core/dayEngine";
+import { GoodDayEngine, notesOf } from "../core/dayEngine";
 import { pairingToMatch, type Match, type MatchPairing, type MatchResult } from "../core/models";
 import { gameWinProb, pairStrength } from "../core/winModel";
 import { availablePlayers, type Project } from "../store";
@@ -33,13 +33,13 @@ export function MatchesView({ state, project, update, updateProject, notify }: V
       freeCourts: Math.max(1, courts - inPlay),
       allPlayers: state.db,
     });
-    const pairings = engine.generateMatches(project.settings.rating_match, project.settings.avoid_same_team);
-    if (pairings.length === 0) {
+    const cands = engine.generateCandidates(project.settings.rating_match, project.settings.avoid_same_team);
+    if (cands.length === 0) {
       notify("この条件では試合を組めませんでした。");
       setProposal(null);
       return;
     }
-    setProposal({ pairings, notes: pairings.map((p) => engine.notes(p)), index: 0 });
+    setProposal({ pairings: cands.map((c) => c.match), notes: cands.map(notesOf), index: 0 });
   };
 
   const adopt = () => {

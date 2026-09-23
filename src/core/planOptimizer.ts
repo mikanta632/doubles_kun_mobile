@@ -6,6 +6,11 @@
  *
  * ラウンドを単位にして中の顔ぶれが重ならないように動かすので、同ラウンドの重複は
  * 構造上 0 になる。乱数の消費順は Python 版と同じ。
+ *
+ * ラウンドは試合一覧の通し番号 ÷ コート数で区切られる（エンジン・ダッシュボードと同じ）。
+ * 既存の試合数がコート数で割り切れないときは、最初のラウンドを残りの面数だけにして
+ * 区切りを合わせ、そのラウンドの既存の試合に出ている人は入れない。いまコートに
+ * 入っている人も、人数に余裕があれば最初のラウンドから外す。
  */
 
 import type { EngineConfig } from "./config";
@@ -45,6 +50,11 @@ export function planSummary(r: PlanResult): string {
   );
 }
 
+/** 同じペアの再現の罰（2 回目から (回数 − 1)²） */
+function excess(v: number): number {
+  return v > 1 ? (v - 1) ** 2 : 0;
+}
+
 function fourOf(m: Match): Four | null {
   if (m.team_a.length !== 2 || m.team_b.length !== 2) return null;
   return [m.team_a[0], m.team_a[1], m.team_b[0], m.team_b[1]];
@@ -54,8 +64,13 @@ function key2(a: string, b: string): string {
   return a <= b ? `${a}\u0000${b}` : `${b}\u0000${a}`;
 }
 
+/**
+ * 不変条件: 同じラウンドの中に同じ人は 1 度しか出てこない（locked を含む）。
+ * 評価値の各項（同席回数の二乗和・ペア再現の罰）は count で差分更新する。
+ */
 class Plan {
   names: string[];
+  nameset: Set<string>;
   ratings: Map<string, number>;
   cfg: EngineConfig;
   rng: PyRandom;
@@ -64,18 +79,25 @@ class Plan {
   dyad = new Map<string, number>();
   pair = new Map<string, number>();
   plays = new Map<string, number>();
+  /** 今いる人どうしの同席回数の二乗和 */
+  dyadSq = 0;
+  /** 今いる人どうしのペア再現の罰の合計 */
+  pairPen = 0;
   hDyad: Map<string, number>;
   hPair: Map<string, number>;
   hPlays: Map<string, number>;
   nRounds: number;
   roundOf: number[];
   roundSlots: number[][];
+  /** ラウンドごとの、計画の外で決まっている出場者（最初のラウンドだけ） */
+  locked: Set<string>[];
   members: Set<string>[];
   close = 0;
   slots: string[][];
 
-  constructor(names: string[], ratings: Map<string, number>, history: Four[], cfg: EngineConfig, rng: PyRandom, nNew: number, courts: number) {
+  constructor(names: string[], ratings: Map<string, number>, history: Four[], cfg: EngineConfig, rng: PyRandom, nNew: number, courts: number, firstSize?: number, locked?: Set<string>) {
     this.names = [...names];
+    this.nameset = new Set(this.names);
     this.ratings = ratings;
     this.cfg = cfg;
     this.rng = rng;
@@ -87,17 +109,29 @@ class Plan {
     this.hPair = new Map(this.pair);
     this.hPlays = new Map(this.plays);
 
-    this.nRounds = Math.ceil(nNew / courts);
-    this.roundOf = Array.from({ length: nNew }, (_, i) => Math.floor(i / courts));
-    this.roundSlots = Array.from({ length: this.nRounds }, () => []);
-    for (let i = 0; i < nNew; i++) this.roundSlots[this.roundOf[i]].push(i);
-    this.members = Array.from({ length: this.nRounds }, () => new Set());
+    // 最初のラウンドは既存の試合の続き（firstSize 面）、最後のラウンドは試合数が少ないことがある
+    let size = Math.min(courts, firstSize || courts);
+    this.roundSlots = [];
+    for (let i = 0; i < nNew; ) {
+      const k = Math.min(size, nNew - i);
+      this.roundSlots.push(Array.from({ length: k }, (_, j) => i + j));
+      i += k;
+      size = courts;
+    }
+    this.nRounds = this.roundSlots.length;
+    this.roundOf = new Array<number>(nNew).fill(0);
+    this.roundSlots.forEach((idxs, r) => {
+      for (const i of idxs) this.roundOf[i] = r;
+    });
+    this.locked = Array.from({ length: this.nRounds }, () => new Set<string>());
+    if (locked && locked.size > 0 && this.nRounds > 0) this.locked[0] = new Set(locked);
+    this.members = this.locked.map((lk) => new Set(lk));
 
     this.slots = Array.from({ length: nNew }, () => []);
     const counts = new Map(this.plays);
     this.roundSlots.forEach((idxs, r) => {
       const need = 4 * idxs.length;
-      const keyed = this.names.map((x) => ({ x, k: [counts.get(x) ?? 0, rng.random()] }));
+      const keyed = this.names.filter((x) => !this.locked[r].has(x)).map((x) => ({ x, k: [counts.get(x) ?? 0, rng.random()] }));
       keyed.sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1]);
       const picked = keyed.slice(0, need).map((e) => e.x);
       rng.shuffle(picked);
@@ -118,14 +152,18 @@ class Plan {
     for (const x of f) {
       if (this.plays.has(x) || !history) this.plays.set(x, (this.plays.get(x) ?? 0) + sign);
     }
-    const p1 = key2(f[0], f[1]);
-    const p2 = key2(f[2], f[3]);
-    this.pair.set(p1, (this.pair.get(p1) ?? 0) + sign);
-    this.pair.set(p2, (this.pair.get(p2) ?? 0) + sign);
+    for (const [a, b] of [[f[0], f[1]], [f[2], f[3]]]) {
+      const k = key2(a, b);
+      const v = this.pair.get(k) ?? 0;
+      this.pair.set(k, v + sign);
+      if (this.nameset.has(a) && this.nameset.has(b)) this.pairPen += excess(v + sign) - excess(v);
+    }
     for (let i = 0; i < 4; i++)
       for (let j = i + 1; j < 4; j++) {
         const k = key2(f[i], f[j]);
-        this.dyad.set(k, (this.dyad.get(k) ?? 0) + sign);
+        const v = this.dyad.get(k) ?? 0;
+        this.dyad.set(k, v + sign);
+        if (this.nameset.has(f[i]) && this.nameset.has(f[j])) this.dyadSq += (v + sign) * (v + sign) - v * v;
       }
   }
 
@@ -149,16 +187,7 @@ class Plan {
       if (v < mn) mn = v;
     }
     const fair = mx - mn;
-    let dyad = 0;
-    for (const [k, v] of this.dyad) if (this.bothKnown(k)) dyad += v * v;
-    let pair = 0;
-    for (const [k, v] of this.pair) if (v > 1 && this.bothKnown(k)) pair += (v - 1) ** 2;
-    return W_FAIR * Math.max(0, fair - 1) + dyad + W_PAIR * pair + W_CLOSE * this.close;
-  }
-
-  private bothKnown(k: string): boolean {
-    const i = k.indexOf("\u0000");
-    return this.plays.has(k.slice(0, i)) && this.plays.has(k.slice(i + 1));
+    return W_FAIR * Math.max(0, fair - 1) + this.dyadSq + W_PAIR * this.pairPen + W_CLOSE * this.close;
   }
 
   apply(i: number, next: string[]): void {
@@ -168,7 +197,7 @@ class Plan {
     this.count(next, +1);
     this.close += this.closeness(next) - this.closeness(old);
     this.slots[i] = next;
-    const members = new Set<string>();
+    const members = new Set<string>(this.locked[r]);
     for (const j of this.roundSlots[r]) for (const x of this.slots[j]) members.add(x);
     this.members[r] = members;
   }
@@ -272,14 +301,18 @@ function orderCost(rounds: string[][][], names: string[], target: number, recent
   return W_WAIT * wait + W_RECENT * recent;
 }
 
-function optimizeOrder(rounds: string[][][], names: string[], courts: number, recentRounds: number, rng: PyRandom, iters: number, progress: ProgressFn | undefined, stop: StopFn | undefined, base: number, total: number): string[][][] {
+/** fixedHead: 最初のラウンドを先頭に固定する（既存の試合の続きのとき） */
+function optimizeOrder(rounds: string[][][], names: string[], courts: number, recentRounds: number, rng: PyRandom, iters: number, progress: ProgressFn | undefined, stop: StopFn | undefined, base: number, total: number, fixedHead = false): string[][][] {
   const target = Math.max(1, Math.ceil(names.length / (4 * courts)));
-  const tail = rounds.length > 1 && rounds[rounds.length - 1].length < courts ? rounds[rounds.length - 1] : null;
-  const body = tail !== null ? rounds.slice(0, -1) : [...rounds];
+  const head = fixedHead && rounds.length > 0 ? [rounds[0]] : [];
+  const others = rounds.slice(head.length);
+  // 試合数の少ない最後のラウンドは末尾に固定する
+  const tail = others.length > 1 && others[others.length - 1].length < courts ? others[others.length - 1] : null;
+  const body = tail !== null ? others.slice(0, -1) : [...others];
   const rest = tail !== null ? [tail] : [];
   const n = body.length;
-  if (n < 2) return [...body, ...rest];
-  let cur = orderCost([...body, ...rest], names, target, recentRounds);
+  if (n < 2) return [...head, ...body, ...rest];
+  let cur = orderCost([...head, ...body, ...rest], names, target, recentRounds);
   for (let t = 0; t < iters; t++) {
     if (stop && (t & 1023) === 0 && stop()) break;
     if (progress && (t & 2047) === 0) progress(base + t, total);
@@ -287,12 +320,12 @@ function optimizeOrder(rounds: string[][][], names: string[], courts: number, re
     const j = rng.randrange(n);
     if (i === j) continue;
     [body[i], body[j]] = [body[j], body[i]];
-    const nxt = orderCost([...body, ...rest], names, target, recentRounds);
+    const nxt = orderCost([...head, ...body, ...rest], names, target, recentRounds);
     const temp = 50 * (1 - t / Math.max(1, iters)) + 0.1;
     if (nxt <= cur || rng.random() < Math.exp((cur - nxt) / temp)) cur = nxt;
     else [body[i], body[j]] = [body[j], body[i]];
   }
-  return [...body, ...rest];
+  return [...head, ...body, ...rest];
 }
 
 export interface PlanOptions {
@@ -305,6 +338,10 @@ export interface PlanOptions {
   stop?: StopFn;
 }
 
+/**
+ * nMatches 試合をまとめて組む。4 人そろわない・試合数 0 なら null。
+ * players にはいまコートに入っている人も含める（最初のラウンドからは外す）。
+ */
 export function optimizePlan(players: readonly Player[], pastMatches: readonly Match[], nMatches: number, opts: PlanOptions = {}): PlanResult | null {
   const cfg = opts.config ?? DEFAULT_CONFIG;
   let courts = Math.max(1, opts.courts ?? cfg.courts);
@@ -320,17 +357,28 @@ export function optimizePlan(players: readonly Player[], pastMatches: readonly M
   }
   for (const f of history) for (const x of f) if (!ratings.has(x)) ratings.set(x, 1500);
 
+  // 既存の試合の続き: 最後のラウンドが埋まりきっていなければ、残りの面から始める
+  const offset = pastMatches.length % courts;
+  const firstSize = offset ? courts - offset : courts;
+  const locked = new Set<string>();
+  if (offset) for (const m of pastMatches.slice(pastMatches.length - offset)) for (const x of [...m.team_a, ...m.team_b]) locked.add(x);
+  // いまコートに入っている人は、人数に余裕があれば最初のラウンドから外す
+  const inPlay = new Set<string>();
+  for (const m of pastMatches) if (m.in_play) for (const x of [...m.team_a, ...m.team_b]) inPlay.add(x);
+  const free = names.filter((x) => !locked.has(x) && !inPlay.has(x));
+  if (free.length >= 4 * Math.min(firstSize, nMatches)) for (const x of inPlay) locked.add(x);
+
   const rng = new PyRandom(opts.seed);
   const si = opts.setIters ?? Math.max(20000, 4000 * nMatches);
   const oi = opts.orderIters ?? Math.max(10000, 1000 * nMatches);
   const total = si + oi;
 
-  const plan = new Plan(names, ratings, history, cfg, rng, nMatches, courts);
+  const plan = new Plan(names, ratings, history, cfg, rng, nMatches, courts, firstSize, locked);
   optimizeSet(plan, si, opts.progress, opts.stop, 0, total);
   if (opts.stop && opts.stop()) return null;
 
   let rounds = plan.roundSlots.map((idxs) => idxs.map((i) => [...plan.slots[i]]));
-  rounds = optimizeOrder(rounds, names, courts, Math.max(0, cfg.day_recent_rounds), rng, oi, opts.progress, opts.stop, si, total);
+  rounds = optimizeOrder(rounds, names, courts, Math.max(0, cfg.day_recent_rounds), rng, oi, opts.progress, opts.stop, si, total, plan.locked[0].size > 0 || firstSize < courts);
   opts.progress?.(total, total);
 
   const seq = rounds.flat();
@@ -347,7 +395,7 @@ export function optimizePlan(players: readonly Player[], pastMatches: readonly M
     pair_repeats: pairRepeats(seq, plan.hPair, names),
     out_of_band: seq.filter((f) => plan.closeness(f) > 0).length,
     max_wait: maxWait(rounds, names),
-    conflicts: conflicts(seq, courts),
+    conflicts: conflicts(rounds, plan.locked[0]),
     courts,
   };
 }
@@ -420,12 +468,14 @@ function maxWait(rounds: string[][][], names: string[]): number {
   return worst;
 }
 
-function conflicts(seq: string[][], courts: number): number {
+/** 同じラウンドに同じ人が重なった数。最初のラウンドは既存の試合の出場者も数える */
+function conflicts(rounds: string[][][], lockedFirst: Set<string>): number {
   let total = 0;
-  for (let r = 0; r < Math.ceil(seq.length / courts); r++) {
+  rounds.forEach((matches, r) => {
     const seen = new Map<string, number>();
-    for (const f of seq.slice(r * courts, (r + 1) * courts)) for (const x of f) seen.set(x, (seen.get(x) ?? 0) + 1);
+    if (r === 0) for (const x of lockedFirst) seen.set(x, 1);
+    for (const f of matches) for (const x of f) seen.set(x, (seen.get(x) ?? 0) + 1);
     for (const v of seen.values()) if (v > 1) total += v - 1;
-  }
+  });
   return total;
 }
