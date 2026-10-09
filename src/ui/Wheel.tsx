@@ -5,7 +5,7 @@ export interface WheelOption<T> {
   label: string;
 }
 
-const ITEM_H = 36;
+const ITEM_H = 44;
 const MAX_VISIBLE = 5;
 
 /**

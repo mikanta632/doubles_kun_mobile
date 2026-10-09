@@ -45,8 +45,8 @@ export default defineConfig({
         start_url: "/doubles_kun_mobile/",
         scope: "/doubles_kun_mobile/",
         display: "standalone",
-        background_color: "#f3f4f6",
-        theme_color: "#2563eb",
+        background_color: "#f5f5f4",
+        theme_color: "#f5f5f4",
         // デスクトップ版の icon.ico から作った（tools/ ではなく手元の Pillow で生成）
         icons: [
           { src: "icon-192.png", sizes: "192x192", type: "image/png" },
@@ -57,6 +57,23 @@ export default defineConfig({
       workbox: {
         // version.json は含めない（json を除外）。更新確認は必ずネットワークから読む
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        // Google Fonts は一度読んだら端末に保存して、体育館の電波が悪くても同じ書体で出す
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: { cacheName: "google-fonts-css" },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-files",
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import { BUILD, applyUpdate, checkForUpdate, describe, type UpdateCheck } from "../version";
+import { ExternalIcon } from "./icons";
 
 /** 設定タブの「このアプリ」。いまの版と、公開先の最新版の確認・更新。 */
 export function UpdateCard(props: { autoCheck?: boolean }) {
@@ -30,22 +31,27 @@ export function UpdateCard(props: { autoCheck?: boolean }) {
   else message = `確認できませんでした（${check.reason}）。`;
 
   return (
-    <div class="card stack">
-      <h2>このアプリ</h2>
-      <div class="muted">{describe(BUILD)}</div>
-      {message && <div class={check?.status === "newer" ? "" : "muted"}>{message}</div>}
-      <div class="row wrap">
-        <button class="btn" onClick={run} disabled={busy || applying}>更新を確認</button>
-        {check?.status === "newer" && (
-          <button class="btn primary" onClick={apply} disabled={applying}>
-            {applying ? "更新しています…" : "最新版に更新"}
-          </button>
-        )}
+    <section class="section">
+      <div class="section-h"><h2>このアプリ</h2></div>
+      <div class="panel">
+        <div class="lrow static">
+          <span class="body">
+            <span>バージョン</span>
+            <span class="sub mono">{describe(BUILD)}</span>
+            {message && <span class="sub" style={check?.status === "newer" ? "color:var(--ink);font-weight:600" : ""}>{message}</span>}
+          </span>
+          {check?.status === "newer" ? (
+            <button class="btn primary" onClick={apply} disabled={applying}>{applying ? "更新しています…" : "最新版に更新"}</button>
+          ) : (
+            <button class="btn" onClick={run} disabled={busy || applying}>更新を確認</button>
+          )}
+        </div>
+        <a class="lrow" href="https://github.com/mikanta632/doubles_kun_mobile" target="_blank" rel="noopener">
+          <span class="body">GitHub</span>
+          <span class="chev"><ExternalIcon /></span>
+        </a>
       </div>
-      <div class="muted">
-        <a href="https://github.com/mikanta632/doubles_kun_mobile" target="_blank" rel="noopener">GitHub</a>
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -67,12 +73,12 @@ export function UpdateBanner() {
 
   if (latest === null || dismissed) return null;
   return (
-    <div class="banner">
-      <span class="grow">新しいバージョンがあります（{latest}）</span>
-      <button class="btn small primary" disabled={applying} onClick={() => { setApplying(true); void applyUpdate(); }}>
+    <div class="banner" role="status">
+      <span class="grow">新しいバージョンがあります（<span class="mono">{latest}</span>）</span>
+      <button class="btn text" onClick={() => setDismissed(true)}>あとで</button>
+      <button class="btn primary" disabled={applying} onClick={() => { setApplying(true); void applyUpdate(); }}>
         {applying ? "更新中…" : "更新"}
       </button>
-      <button class="btn small ghost" onClick={() => setDismissed(true)}>あとで</button>
     </div>
   );
 }

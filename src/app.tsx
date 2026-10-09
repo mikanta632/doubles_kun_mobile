@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from "preact/hooks";
 import { currentProject, loadState, recalcRatings, saveState, updateCurrent, type AppState, type Project } from "./store";
-import { AttendanceView } from "./ui/AttendanceView";
-import { ProjectView } from "./ui/ProjectView";
+import { MembersView } from "./ui/MembersView";
 import { MatchesView } from "./ui/MatchesView";
 import { DashboardView } from "./ui/DashboardView";
 import { SettingsView } from "./ui/SettingsView";
 import { UpdateBanner } from "./ui/UpdateCard";
-import { DashboardIcon, MatchesIcon, MembersIcon, ProjectIcon, SettingsIcon } from "./ui/icons";
+import { DashboardIcon, MatchesIcon, MembersIcon, SettingsIcon } from "./ui/icons";
 import type { ComponentType } from "preact";
 
-export type Tab = "project" | "attendance" | "matches" | "dashboard" | "settings";
+export type Tab = "matches" | "members" | "dashboard" | "settings";
 export type Update = (fn: (s: AppState) => AppState) => void;
 export type UpdateProject = (fn: (p: Project, s: AppState) => Project) => void;
 export type Notify = (msg: string) => void;
@@ -22,19 +21,20 @@ export interface ViewProps {
   /** いま開いているプロジェクトだけを書き換える */
   updateProject: UpdateProject;
   notify: Notify;
+  /** 別のタブへ移る */
+  go: (tab: Tab) => void;
 }
 
 const TABS: { key: Tab; label: string; icon: ComponentType }[] = [
-  { key: "project", label: "プロジェクト", icon: ProjectIcon },
-  { key: "attendance", label: "メンバー", icon: MembersIcon },
   { key: "matches", label: "試合", icon: MatchesIcon },
+  { key: "members", label: "メンバー", icon: MembersIcon },
   { key: "dashboard", label: "集計", icon: DashboardIcon },
   { key: "settings", label: "設定", icon: SettingsIcon },
 ];
 
 export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
-  const [tab, setTab] = useState<Tab>(() => (currentProject(state).members.length ? "matches" : "project"));
+  const [tab, setTab] = useState<Tab>(() => (currentProject(state).members.length ? "matches" : "members"));
   const [toast, setToast] = useState<string | null>(null);
 
   // どんな変更のあとも、開いているプロジェクトの試合結果からレートを計算し直す
@@ -56,31 +56,31 @@ export function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  const go = useCallback((t: Tab) => {
+    setTab(t);
+    window.scrollTo(0, 0);
+  }, []);
+
   const project = currentProject(state);
-  const props: ViewProps = { state, project, update, updateProject, notify };
+  const props: ViewProps = { state, project, update, updateProject, notify, go };
   return (
     <>
-      <div class="screen">
-        <div class="brand">
-          <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="" width="30" height="30" />
-          <span>ダブルスくん</span>
-        </div>
+      <main class="screen">
         <UpdateBanner />
-        {tab === "project" && <ProjectView {...props} />}
-        {tab === "attendance" && <AttendanceView {...props} onGoProject={() => setTab("project")} />}
         {tab === "matches" && <MatchesView {...props} />}
+        {tab === "members" && <MembersView {...props} />}
         {tab === "dashboard" && <DashboardView {...props} />}
         {tab === "settings" && <SettingsView {...props} />}
-      </div>
-      <nav class="nav">
+      </main>
+      <nav class="nav" aria-label="メイン">
         {TABS.map((t) => (
-          <button key={t.key} class={tab === t.key ? "on" : ""} onClick={() => setTab(t.key)}>
-            <span class="ico"><t.icon /></span>
+          <button key={t.key} class={tab === t.key ? "on" : ""} aria-current={tab === t.key ? "page" : undefined} onClick={() => go(t.key)}>
+            <t.icon />
             {t.label}
           </button>
         ))}
       </nav>
-      {toast !== null && <div class="toast">{toast}</div>}
+      {toast !== null && <div class="toast" role="status">{toast}</div>}
     </>
   );
 }

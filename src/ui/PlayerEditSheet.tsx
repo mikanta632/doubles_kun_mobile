@@ -66,39 +66,38 @@ export function PlayerEditSheet({ player, state, project, update, notify, onRemo
   };
 
   return (
-    <Sheet title="メンバーを編集" onClose={onClose}>
-      <div class="stack">
-        <label>
-          <div class="muted">名前</div>
+    <Sheet title="メンバーを編集" eyebrow={player.name} onClose={onClose}>
+      <div class="row">
+        <label class="field grow">
+          <span>名前</span>
           <input type="text" value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
         </label>
-        <label>
-          <div class="muted">レート</div>
+        <label class="field" style="width:104px">
+          <span>レート</span>
           <input type="number" inputMode="numeric" value={rating} onInput={(e) => setRating((e.target as HTMLInputElement).value)} />
         </label>
-        <div>
-          <div class="muted">所属</div>
-          <Wheel options={teamOptions} value={teamChoice} onChange={setTeamChoice} />
-          {teamChoice === NEW_TEAM && (
-            <input type="text" placeholder="所属を入力" value={teamText} onInput={(e) => setTeamText((e.target as HTMLInputElement).value)} style="margin-top:6px" />
-          )}
-        </div>
-        <label class="check">
-          <input type="checkbox" checked={!active} onChange={(e) => setActive(!(e.target as HTMLInputElement).checked)} />
-          休会中
-        </label>
-        {onRemove && isMember && (
-          <button class="btn block" onClick={() => { onRemove(player.name); if (!playedHere) onClose(); }} disabled={playedHere}>
-            名簿から外す
-          </button>
+      </div>
+      <div class="field">
+        <span>所属</span>
+        <Wheel class="boxed" options={teamOptions} value={teamChoice} onChange={setTeamChoice} />
+        {teamChoice === NEW_TEAM && (
+          <input type="text" placeholder="所属を入力" aria-label="所属を入力" value={teamText} onInput={(e) => setTeamText((e.target as HTMLInputElement).value)} style="margin-top:6px" />
         )}
-        <div class="row between">
-          <button class="btn danger" onClick={remove}>削除</button>
-          <div class="row">
-            <button class="btn" onClick={onClose}>キャンセル</button>
-            <button class="btn primary" onClick={save}>保存</button>
-          </div>
-        </div>
+      </div>
+      <label class="check">
+        <input type="checkbox" checked={!active} onChange={(e) => setActive(!(e.target as HTMLInputElement).checked)} />
+        休会中（どのプロジェクトでも試合に入れない）
+      </label>
+      {onRemove && isMember && (
+        <button class="btn block" onClick={() => { onRemove(player.name); if (!playedHere) onClose(); }} disabled={playedHere}>
+          {playedHere ? "試合に出ているので名簿から外せません" : "このプロジェクトの名簿から外す"}
+        </button>
+      )}
+      <div class="actions">
+        <button class="btn danger tall" onClick={remove}>削除</button>
+        <span class="grow" />
+        <button class="btn tall" onClick={onClose}>キャンセル</button>
+        <button class="btn primary tall" onClick={save}>保存</button>
       </div>
     </Sheet>
   );

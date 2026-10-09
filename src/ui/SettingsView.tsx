@@ -1,36 +1,23 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import type { EngineConfig } from "../core/config";
 import { DEFAULT_CONFIG } from "../core/config";
-import { newMatch } from "../core/models";
 import { estimatePairModel, estimateSummary, isConclusive } from "../core/pairModelEstimator";
-import { planSummary, type PlanResult } from "../core/planOptimizer";
 import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareText, todayStamp } from "../io";
-import { addProject, attendingPlayers, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
-import type { PlanMessage, PlanRequest } from "../planWorker";
+import { addProject, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
+import { ChevronRight } from "./icons";
+import { DatabaseSheet } from "./ProjectSheets";
+import { Sheet } from "./Sheet";
 import { UpdateCard } from "./UpdateCard";
 
-export function SettingsView({ state, project, update, updateProject, notify }: ViewProps) {
+type Open = null | "db" | "advanced" | "export";
+
+export function SettingsView(props: ViewProps) {
+  const { state, project, update, updateProject, notify } = props;
   const cfg = project.config;
   const setCfg = (patch: Partial<EngineConfig>) => updateProject((p) => ({ ...p, config: { ...p.config, ...patch } }));
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const recalc = () => {
-    update((s) => recalcRatings(s, true));
-    notify("初期レートとこのプロジェクトの試合結果から、現在のレートを計算し直しました。");
-  };
-
-  const estimate = () => {
-    const ratings = new Map(state.db.map((p) => [p.name, p.initial_rating]));
-    // G は設定の値に固定して p だけを推定する（反映するのは p だけなので）
-    const e = estimatePairModel(project.matches, ratings, project.config.game_scale);
-    if (!e) {
-      notify("推定に使える試合がありません。ゲーム数の入った結果が必要です。");
-      return;
-    }
-    alert(estimateSummary(e));
-    if (isConclusive(e)) setCfg({ pair_weak_weight: e.weak_weight });
-  };
+  const [open, setOpen] = useState<Open>(null);
 
   const onImport = async (file: File) => {
     try {
@@ -77,186 +64,189 @@ export function SettingsView({ state, project, update, updateProject, notify }: 
     }
   };
 
+  return (
+    <>
+      <header class="head">
+        <div>
+          <div class="eyebrow">{project.name}</div>
+          <h1>設定</h1>
+        </div>
+      </header>
+
+      <section class="section">
+        <div class="section-h"><h2>試合の組み方</h2></div>
+        <div class="panel">
+          <div class="lrow static">
+            <span class="body">コート数</span>
+            <div class="seg" role="radiogroup" aria-label="コート数">
+              {[1, 2, 3].map((n) => (
+                <button key={n} role="radio" aria-checked={cfg.courts === n} class={cfg.courts === n ? "on" : ""} onClick={() => setCfg({ courts: n })}>{n} 面</button>
+              ))}
+            </div>
+          </div>
+          <label class="lrow">
+            <span class="body">レートを見て接戦になるように組む</span>
+            <input type="checkbox" checked={project.settings.rating_match} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, rating_match: (e.target as HTMLInputElement).checked } }))} />
+          </label>
+          <label class="lrow">
+            <span class="body">同じ所属の人をなるべくペアにしない</span>
+            <input type="checkbox" checked={project.settings.avoid_same_team} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, avoid_same_team: (e.target as HTMLInputElement).checked } }))} />
+          </label>
+          <label class="lrow">
+            <span class="body">試合結果でレートを自動更新</span>
+            <input type="checkbox" checked={cfg.elo_auto_update} onChange={(e) => setCfg({ elo_auto_update: (e.target as HTMLInputElement).checked })} />
+          </label>
+          <button class="lrow" onClick={() => setOpen("advanced")}>
+            <span class="body">
+              <span>詳細設定</span>
+              <span class="sub">接戦の基準・待ちの上限・Elo の係数など 10 項目</span>
+            </span>
+            <span class="chev"><ChevronRight /></span>
+          </button>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-h"><h2>データ</h2></div>
+        <div class="panel">
+          <button class="lrow" onClick={() => setOpen("db")}>
+            <span class="body">
+              <span>メンバーのデータベース</span>
+              <span class="sub">全プロジェクト共通の登録・休会中の人</span>
+            </span>
+            <span class="count">{state.db.length}</span>
+            <span class="chev"><ChevronRight /></span>
+          </button>
+          <button class="lrow" onClick={() => setOpen("export")}>
+            <span class="body">
+              <span>書き出す</span>
+              <span class="sub">このプロジェクト・players.json・matches.json</span>
+            </span>
+            <span class="chev"><ChevronRight /></span>
+          </button>
+          <button class="lrow" onClick={() => fileRef.current?.click()}>
+            <span class="body">
+              <span>読み込む</span>
+              <span class="sub">デスクトップ版の JSON にも対応</span>
+            </span>
+            <span class="chev"><ChevronRight /></span>
+          </button>
+          <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) onImport(f); (e.target as HTMLInputElement).value = ""; }} />
+        </div>
+      </section>
+
+      <UpdateCard />
+
+      <section class="section">
+        <div class="section-h"><h2 class="danger">削除</h2></div>
+        <div class="panel">
+          <button class="lrow danger" disabled={project.matches.length === 0}
+            onClick={() => { if (confirm(`「${project.name}」の試合 ${project.matches.length} 件を消しますか？（名簿は残ります）`)) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>
+            <span class="body">このプロジェクトの試合を削除</span>
+            <span class="count" style="color:inherit">{project.matches.length}</span>
+          </button>
+          <button class="lrow danger"
+            onClick={() => { if (confirm(`データベースの ${state.db.length} 人と ${state.projects.length} 件のプロジェクトを、すべて消します。よろしいですか？`)) { update(() => emptyState()); notify("すべて消しました。"); } }}>
+            <span class="body">すべてのデータを削除</span>
+          </button>
+        </div>
+      </section>
+
+      {open === "db" && <DatabaseSheet {...props} onClose={() => setOpen(null)} />}
+      {open === "advanced" && <AdvancedSheet {...props} setCfg={setCfg} onClose={() => setOpen(null)} />}
+      {open === "export" && <ExportSheet {...props} onClose={() => setOpen(null)} />}
+    </>
+  );
+}
+
+function ExportSheet({ state, project, onClose }: ViewProps & { onClose: () => void }) {
   const exportAll = async () => {
     const name = `${project.name}_${todayStamp()}.json`;
     const text = bundleJson(state, project);
     if (await shareText(name, text)) return;
     downloadText(name, text);
   };
+  return (
+    <Sheet title="書き出す" eyebrow={project.name} onClose={onClose}>
+      <div class="panel">
+        <button class="lrow" onClick={exportAll}>
+          <span class="body">
+            <span>このプロジェクト</span>
+            <span class="sub">名簿・試合・設定をまとめて。このアプリで読み込めます</span>
+          </span>
+          <span class="chev"><ChevronRight /></span>
+        </button>
+        <button class="lrow" onClick={() => downloadText("players.json", playersJson(state, project))}>
+          <span class="body">
+            <span class="mono">players.json</span>
+            <span class="sub">名簿だけ（デスクトップ版と同じ形）</span>
+          </span>
+          <span class="chev"><ChevronRight /></span>
+        </button>
+        <button class="lrow" onClick={() => downloadText("matches.json", matchesJson(project))}>
+          <span class="body">
+            <span class="mono">matches.json</span>
+            <span class="sub">試合だけ（デスクトップ版と同じ形）</span>
+          </span>
+          <span class="chev"><ChevronRight /></span>
+        </button>
+      </div>
+    </Sheet>
+  );
+}
 
+function AdvancedSheet({ state, project, update, notify, setCfg, onClose }: ViewProps & { setCfg: (patch: Partial<EngineConfig>) => void; onClose: () => void }) {
+  const cfg = project.config;
   const band = Math.round(cfg.day_win_prob_min * 100);
+  const [estimate, setEstimate] = useState<string | null>(null);
+
+  const recalc = () => {
+    update((s) => recalcRatings(s, true));
+    notify("初期レートとこのプロジェクトの試合結果から、現在のレートを計算し直しました。");
+  };
+
+  const runEstimate = () => {
+    const ratings = new Map(state.db.map((p) => [p.name, p.initial_rating]));
+    // G は設定の値に固定して p だけを推定する（反映するのは p だけなので）
+    const e = estimatePairModel(project.matches, ratings, project.config.game_scale);
+    if (!e) {
+      notify("推定に使える試合がありません。ゲーム数の入った結果が必要です。");
+      return;
+    }
+    setEstimate(estimateSummary(e));
+    if (isConclusive(e)) setCfg({ pair_weak_weight: e.weak_weight });
+  };
 
   return (
-    <>
-      <div class="topbar">
-        <h1>設定</h1>
+    <Sheet title="詳細設定" eyebrow={project.name} onClose={onClose}>
+      <div class="panel">
+        <NumberField label="接戦とみなす 1 ゲーム勝率の下限（%）" value={band} min={20} max={50} onChange={(v) => setCfg({ day_win_prob_min: v / 100 })} />
+        <NumberField label="連続待ちの上限（ラウンド。0 は自動）" value={cfg.day_wait_cap} min={0} max={12} onChange={(v) => setCfg({ day_wait_cap: v })} />
+        <NumberField label="上限が自動のときの余裕（ラウンド）" value={cfg.day_wait_slack} min={0} max={4} onChange={(v) => setCfg({ day_wait_slack: v })} />
+        <NumberField label="出場回数の差の許容（回）" value={cfg.day_play_slack} min={0} max={2} onChange={(v) => setCfg({ day_play_slack: v })} />
+        <NumberField label="再同席を避けるラウンド数" value={cfg.day_recent_rounds} min={0} max={5} onChange={(v) => setCfg({ day_recent_rounds: v })} />
+        <NumberField label="同席回数の上限（均等な回数に足す分）" value={cfg.day_dyad_slack} min={1} max={5} onChange={(v) => setCfg({ day_dyad_slack: v })} />
+        <NumberField label="同じ所属のペア 1 組あたりの減点（0 = 気にしない）" value={cfg.day_same_team_weight} min={0} max={20} step={0.5} onChange={(v) => setCfg({ day_same_team_weight: v })} />
+        <NumberField label="1 ゲームのレートスケール" value={cfg.game_scale} min={100} max={3000} step={50} onChange={(v) => setCfg({ game_scale: v })} />
+        <NumberField label="ペア強度の弱い側の重み p（0.5 は単純平均）" value={cfg.pair_weak_weight} min={0.2} max={0.8} step={0.01} onChange={(v) => setCfg({ pair_weak_weight: v })} />
+        <NumberField label="Elo の K 係数" value={cfg.elo_k_factor} min={1} max={100} onChange={(v) => setCfg({ elo_k_factor: v })} />
       </div>
-
-      <div class="card stack">
-        <h2>試合の組み方</h2>
-        <div>
-          <div class="muted">コート数</div>
-          <div class="seg">
-            {[1, 2, 3].map((n) => <button key={n} class={cfg.courts === n ? "on" : ""} onClick={() => setCfg({ courts: n })}>{n} 面</button>)}
-          </div>
-        </div>
-        <label class="check">
-          <input type="checkbox" checked={project.settings.rating_match} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, rating_match: (e.target as HTMLInputElement).checked } }))} />
-          レートを見て接戦になるように組む
-        </label>
-        <label class="check">
-          <input type="checkbox" checked={project.settings.avoid_same_team} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, avoid_same_team: (e.target as HTMLInputElement).checked } }))} />
-          同じ所属の人をなるべくペアにしない
-        </label>
-        <label class="check">
-          <input type="checkbox" checked={cfg.elo_auto_update} onChange={(e) => setCfg({ elo_auto_update: (e.target as HTMLInputElement).checked })} />
-          試合結果でレートを自動更新
-        </label>
+      {estimate && <div class="plan-summary">{estimate}</div>}
+      <div class="row wrap">
+        <button class="btn" onClick={runEstimate}>試合結果から p を推定</button>
+        <button class="btn" onClick={recalc}>レートを再計算</button>
+        <button class="btn" onClick={() => { if (confirm("詳細設定を既定値に戻しますか？")) setCfg({ ...DEFAULT_CONFIG, courts: cfg.courts, elo_auto_update: cfg.elo_auto_update }); }}>既定値に戻す</button>
       </div>
-
-      <PlanCard state={state} project={project} update={update} updateProject={updateProject} notify={notify} />
-
-      <details class="card">
-        <summary>詳細設定</summary>
-        <div class="stack" style="margin-top:8px">
-          <NumberField label="接戦とみなす 1 ゲーム勝率の下限（%）" value={band} min={20} max={50} onChange={(v) => setCfg({ day_win_prob_min: v / 100 })} />
-          <NumberField label="連続待ちの上限（ラウンド。0 は自動）" value={cfg.day_wait_cap} min={0} max={12} onChange={(v) => setCfg({ day_wait_cap: v })} />
-          <NumberField label="上限が自動のときの余裕（ラウンド）" value={cfg.day_wait_slack} min={0} max={4} onChange={(v) => setCfg({ day_wait_slack: v })} />
-          <NumberField label="出場回数の差の許容（回）" value={cfg.day_play_slack} min={0} max={2} onChange={(v) => setCfg({ day_play_slack: v })} />
-          <NumberField label="再同席を避けるラウンド数" value={cfg.day_recent_rounds} min={0} max={5} onChange={(v) => setCfg({ day_recent_rounds: v })} />
-          <NumberField label="同席回数の上限（均等な回数に足す分）" value={cfg.day_dyad_slack} min={1} max={5} onChange={(v) => setCfg({ day_dyad_slack: v })} />
-          <NumberField label="同じ所属のペア 1 組あたりの減点（0 = 気にしない）" value={cfg.day_same_team_weight} min={0} max={20} step={0.5} onChange={(v) => setCfg({ day_same_team_weight: v })} />
-          <NumberField label="1 ゲームのレートスケール" value={cfg.game_scale} min={100} max={3000} step={50} onChange={(v) => setCfg({ game_scale: v })} />
-          <NumberField label="ペア強度の弱い側の重み p（0.5 は単純平均）" value={cfg.pair_weak_weight} min={0.2} max={0.8} step={0.01} onChange={(v) => setCfg({ pair_weak_weight: v })} />
-          <NumberField label="Elo の K 係数" value={cfg.elo_k_factor} min={1} max={100} onChange={(v) => setCfg({ elo_k_factor: v })} />
-          <div class="row wrap">
-            <button class="btn small" onClick={estimate}>試合結果から p を推定</button>
-            <button class="btn small" onClick={recalc}>レートを再計算</button>
-            <button class="btn small" onClick={() => { if (confirm("詳細設定を既定値に戻しますか？")) setCfg({ ...DEFAULT_CONFIG, courts: cfg.courts, elo_auto_update: cfg.elo_auto_update }); }}>既定値に戻す</button>
-          </div>
-        </div>
-      </details>
-
-      <div class="card stack">
-        <h2>エクスポート</h2>
-        <button class="btn primary block" onClick={exportAll}>このプロジェクト（名簿・試合・設定）</button>
-        <div class="row wrap">
-          <button class="btn grow" onClick={() => downloadText("players.json", playersJson(state, project))}>名簿だけ players.json</button>
-          <button class="btn grow" onClick={() => downloadText("matches.json", matchesJson(project))}>試合だけ matches.json</button>
-        </div>
-      </div>
-
-      <div class="card stack">
-        <h2>インポート</h2>
-        <button class="btn block" onClick={() => fileRef.current?.click()}>ファイルを選ぶ</button>
-        <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) onImport(f); (e.target as HTMLInputElement).value = ""; }} />
-      </div>
-
-      <div class="card stack">
-        <h2>削除</h2>
-        <button class="btn danger block" disabled={project.matches.length === 0}
-          onClick={() => { if (confirm(`「${project.name}」の試合 ${project.matches.length} 件を消しますか？（名簿は残ります）`)) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>
-          このプロジェクトの試合（{project.matches.length} 件）
-        </button>
-        <button class="btn danger block"
-          onClick={() => { if (confirm(`データベースの ${state.db.length} 人と ${state.projects.length} 件のプロジェクトを、すべて消します。よろしいですか？`)) { update(() => emptyState()); notify("すべて消しました。"); } }}>
-          すべてのデータ
-        </button>
-      </div>
-
-      <UpdateCard />
-    </>
+    </Sheet>
   );
 }
 
 function NumberField(props: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void }) {
   return (
-    <label class="row between">
-      <span class="grow" style="font-size:14px">{props.label}</span>
-      <input type="number" style="width:96px" inputMode="decimal" min={props.min} max={props.max} step={props.step ?? 1} value={props.value}
+    <label class="lrow static">
+      <span class="body" style="font-size:14px">{props.label}</span>
+      <input type="number" style="width:88px;flex:none" inputMode="decimal" min={props.min} max={props.max} step={props.step ?? 1} value={props.value}
         onChange={(e) => { const v = Number((e.target as HTMLInputElement).value); if (Number.isFinite(v)) props.onChange(Math.min(props.max, Math.max(props.min, v))); }} />
     </label>
-  );
-}
-
-function PlanCard({ state, project, updateProject, notify }: ViewProps) {
-  // いまコートに入っている人も含める（計画の最初のラウンドからは外れる）
-  const available = attendingPlayers(state, project);
-  const [count, setCount] = useState(Math.max(1, Math.round(available.length * 1.5)));
-  const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<(Omit<PlanResult, "matches"> & { matches: string[][][] }) | null>(null);
-  const workerRef = useRef<Worker | null>(null);
-
-  useEffect(() => () => workerRef.current?.terminate(), []);
-
-  const start = () => {
-    if (available.length < 4) {
-      notify("試合に入れる人が 4 人未満です。");
-      return;
-    }
-    const w = new Worker(new URL("../planWorker.ts", import.meta.url), { type: "module" });
-    workerRef.current = w;
-    setRunning(true);
-    setProgress(0);
-    setResult(null);
-    w.onmessage = (ev: MessageEvent<PlanMessage>) => {
-      if (ev.data.type === "progress") setProgress(ev.data.total ? ev.data.done / ev.data.total : 0);
-      else {
-        setRunning(false);
-        setResult(ev.data.result);
-        if (ev.data.result === null) notify("計画を作れませんでした。");
-        w.terminate();
-        workerRef.current = null;
-      }
-    };
-    w.onerror = () => {
-      setRunning(false);
-      notify("計画の作成に失敗しました。");
-      w.terminate();
-      workerRef.current = null;
-    };
-    const req: PlanRequest = { players: available, past: project.matches, nMatches: count, config: project.config };
-    w.postMessage(req);
-  };
-
-  const cancel = () => {
-    workerRef.current?.terminate();
-    workerRef.current = null;
-    setRunning(false);
-  };
-
-  const adopt = () => {
-    if (!result) return;
-    const matches = result.matches.map(([a, b]) => newMatch(a, b));
-    updateProject((p) => ({ ...p, matches: [...p.matches, ...matches] }));
-    notify(`${matches.length} 試合を追加しました。`);
-    setResult(null);
-  };
-
-  return (
-    <div class="card stack">
-      <h2>まとめて組む</h2>
-      <div class="row">
-        <span class="grow">試合数</span>
-        <input type="number" style="width:88px" inputMode="numeric" min={1} max={200} value={count} onChange={(e) => setCount(Math.max(1, Math.min(200, Math.trunc(Number((e.target as HTMLInputElement).value)) || 1)))} />
-      </div>
-      {!running && !result && <button class="btn block" onClick={start} disabled={available.length < 4}>組み合わせを探す</button>}
-      {running && (
-        <>
-          <div class="progress"><div style={`width:${Math.round(progress * 100)}%`}></div></div>
-          <button class="btn block" onClick={cancel}>中止</button>
-        </>
-      )}
-      {result && (
-        <>
-          <div style="white-space:pre-line">{planSummary({ ...result, matches: new Array(result.matches.length) as never })}</div>
-          <div class="row">
-            <button class="btn grow" onClick={() => setResult(null)}>やめる</button>
-            <button class="btn primary grow" onClick={adopt}>この内容で追加</button>
-          </div>
-        </>
-      )}
-    </div>
   );
 }
