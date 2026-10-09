@@ -155,38 +155,30 @@ input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var
 .lrow:disabled { opacity: 0.4; cursor: default; }
 
 /* ---- 試合タブ ---- */
-.strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
-.strip > div { padding: 10px 12px; }
-.strip > div + div { border-left: 1px solid var(--line); }
-.strip .k { font-size: 11px; color: var(--muted); }
-.strip .v { font-family: var(--mono); font-size: 22px; font-weight: 500; line-height: 1.2; }
-.strip .v small { font-size: 14px; color: var(--muted); font-weight: 400; }
+.section-h h2.live { display: flex; align-items: center; gap: 6px; color: var(--live); }
+.section-h h2.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--live); }
+.section-h .mono { font-size: 11px; color: var(--muted); }
 
-.court { display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; padding: 14px; }
-.panel > .court + .court, .panel > .court-go + .court { border-top: 1px solid var(--line); }
-.court .no { font-family: var(--mono); font-size: 30px; font-weight: 500; line-height: 1; }
-.court .no.idle { color: var(--faint); }
-.court .body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.court .meta { display: flex; align-items: center; justify-content: space-between; min-height: 20px; }
-.court .meta .mono { font-size: 12px; color: var(--muted); }
-.court.idle .body { flex-direction: row; align-items: center; justify-content: space-between; }
-.court.idle .body > span { font-size: 14px; color: var(--text-2); }
-.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
-.status.live { color: var(--live); }
-.status.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--live); }
-.side { display: flex; align-items: center; gap: 10px; }
-.side .bar { width: 3px; height: 18px; flex: none; }
-.side .name { flex: 1; min-width: 0; font-size: 17px; font-weight: 600; }
-.side .pct { font-family: var(--mono); font-size: 14px; color: var(--text-2); }
+/* 進行中・待機の行：番号とラウンド ／ 2 チーム ／ ボタン */
+.qrow { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 12px; align-items: center; padding: 12px 14px; background: var(--card); }
+.qrow .num { display: flex; flex-direction: column; align-items: flex-start; padding: 0; border: 0; background: transparent; font-family: var(--mono); line-height: 1.2; text-align: left; cursor: pointer; min-height: 44px; justify-content: center; }
+.qrow .num b { font-size: 18px; font-weight: 500; }
+.qrow .num span { font-size: 11px; color: var(--muted); }
+.qrow .teams { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.team-line { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; }
+.team-line .bar { width: 3px; height: 16px; flex: none; }
+.team-line .pct { margin-left: auto; font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--muted); }
+.qrow.queued { padding: 10px 14px; }
+.qrow.queued .num b { font-size: 15px; }
+.qrow.queued .teams { gap: 2px; }
+.qrow.queued .team-line { font-size: 15px; font-weight: 400; }
+.qrow.queued .team-line .bar { height: 14px; }
+.qrow .btn { min-height: 40px; padding: 0 14px; font-size: 13px; }
 .bar.a { background: var(--team-a); }
 .bar.b { background: var(--team-b); }
-.court-go {
-  width: 100%; min-height: 48px;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 14px 0 66px; border: 0; border-top: 1px solid var(--line-soft);
-  background: transparent; font-size: 14px; font-weight: 600; cursor: pointer; text-align: left;
-}
-.more-go { display: flex; justify-content: flex-end; padding: 10px 14px; border-top: 1px solid var(--line); }
+.panel-foot { padding: 12px 14px; border-top: 1px solid var(--line-soft); }
+.panel-foot .foot { margin-top: 6px; text-align: center; font-size: 11px; }
+.panel .empty-note { padding: 14px; font-size: 13px; color: var(--muted); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; background: var(--card); border: 1px solid var(--line); font-size: 14px; }
@@ -194,13 +186,13 @@ input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var
 .chip.long { border-color: var(--warn-line); font-weight: 600; }
 .chip.long .n { color: var(--warn); }
 
+/* 終了した試合の行 */
 .rec {
   width: 100%; min-height: 52px;
   display: grid; grid-template-columns: 52px minmax(0, 1fr) 64px minmax(0, 1fr); align-items: center; gap: 6px;
-  padding: 8px 14px; border: 0; border-bottom: 1px solid var(--line-soft);
+  padding: 8px 14px; border: 0;
   background: var(--card); text-align: left; cursor: pointer; font-size: 14px;
 }
-.rec:last-child { border-bottom: 0; }
 .rec .no { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .rec .t-b { text-align: right; }
 .rec .win { font-weight: 600; }
@@ -209,14 +201,15 @@ input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var
 .rec .score { font-family: var(--mono); font-size: 16px; font-weight: 500; white-space: nowrap; }
 .rec .score .dash { color: var(--faint); padding: 0 1px; }
 .rec .score .lo { color: var(--muted); }
-.rec .tag { font-size: 11px; font-weight: 600; color: var(--warn); }
-.rec .tag.live { color: var(--live); }
-.round-h { padding: 6px 14px; background: var(--bg); border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: 11px; color: var(--muted); }
-/* 長押しで並べ替え。長押し中に文字選択やメニューが出ないようにする */
-.matchlist .rec { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.matchlist.reordering { touch-action: none; }
-.matchlist.reordering .rec { cursor: grabbing; }
-.rec.dragging { background: var(--bg); box-shadow: 0 6px 18px rgba(12, 13, 13, 0.18); position: relative; z-index: 2; }
+
+/* 長押しで並べ替える一覧。長押し中に文字選択やメニューが出ないようにする */
+.sortable .srow { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.sortable .srow + .srow { border-top: 1px solid var(--line-soft); }
+.sortable.reordering { touch-action: none; }
+.sortable.reordering .srow { cursor: grabbing; }
+.srow.dragging { box-shadow: 0 6px 18px rgba(12, 13, 13, 0.18); position: relative; z-index: 2; }
+.srow.dragging > * { background: var(--bg); }
+.list > * + * { border-top: 1px solid var(--line-soft); }
 
 /* 案シート */
 .matchup { border-top: 1px solid var(--ink); border-bottom: 1px solid var(--line); }
@@ -308,6 +301,8 @@ td.hot { background: #fbe9e7; color: var(--danger); font-weight: 600; }
   display: flex; flex-direction: column; gap: 16px;
 }
 .sheet > * { flex-shrink: 0; }
+/* 上端（つまみと見出し）は下に引いて閉じられる。縦のスクロールに取られないようにする */
+.sheet-top { display: flex; flex-direction: column; gap: 12px; margin: -8px -20px 0; padding: 8px 20px 0; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .sheet .grip { align-self: center; width: 36px; height: 4px; border-radius: 2px; background: #d4d4d1; flex: none; }
 .sheet-head { display: flex; align-items: center; gap: 8px; }
 .sheet-head h2 { margin: 0; font-size: 19px; font-weight: 600; }
