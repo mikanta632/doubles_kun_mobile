@@ -43,11 +43,13 @@ export function PlayerEditSheet({ player, state, project, update, notify, onRemo
     const r = Number(rating);
     update((s0) => {
       const s = renamePlayer(s0, player.name, newName);
-      const db = s.db.map((p) =>
-        p.name === newName
-          ? { ...p, initial_rating: Number.isFinite(r) ? r : p.initial_rating, rating: Number.isFinite(r) ? r : p.rating, team: team || null, active }
-          : p,
-      );
+      const db = s.db.map((p) => {
+        if (p.name !== newName) return p;
+        // 初期レートを変えたときだけ rating も合わせる（自動更新 ON なら直後に再計算される）。
+        // 所属や休会の変更だけで、凍結している rating や読み込んだ rating を初期値に戻さない
+        const changed = Number.isFinite(r) && r !== p.initial_rating;
+        return { ...p, initial_rating: changed ? r : p.initial_rating, rating: changed ? r : p.rating, team: team || null, active };
+      });
       // 休会中にした人は、どのプロジェクトでも試合の候補から外す
       const projects = active ? s.projects : s.projects.map((p) => ({ ...p, selected: p.selected.filter((n) => n !== newName) }));
       return { ...s, db, projects };

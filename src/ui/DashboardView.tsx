@@ -1,7 +1,7 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import { CONTACT_ALERT, buildDashboard, type Card } from "../dashboard";
-import { memberPlayers } from "../store";
+import { attendingPlayers, memberPlayers } from "../store";
 import { NoteIcon } from "./icons";
 
 type Seg = "ranking" | "people" | "contacts" | "timeline";
@@ -32,7 +32,11 @@ function Kpi({ c }: { c: Card }) {
 
 export function DashboardView({ state, project, go }: ViewProps) {
   const [seg, setSeg] = useState<Seg>("ranking");
-  const d = useMemo(() => buildDashboard(memberPlayers(state, project), project.matches, project.config), [state, project]);
+  // 連続待ちの上限は、名簿全員ではなく今日の参加人数で決める（エンジンと同じ）
+  const d = useMemo(
+    () => buildDashboard(memberPlayers(state, project), project.matches, project.config, { attending: attendingPlayers(state, project).length }),
+    [state, project],
+  );
 
   if (d.people.rows.length === 0) {
     return (

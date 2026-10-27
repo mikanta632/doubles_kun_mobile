@@ -60,7 +60,8 @@ export function MatchesView(props: ViewProps) {
 
   // 出番待ちの人：コートに入っていない参加者。連続で休んだラウンド数は、始まった試合（進行中と終了）だけで数える
   const started = useMemo(() => project.matches.filter((m) => m.in_play || isDone(m)), [project.matches]);
-  const dash = useMemo(() => buildDashboard(members, started, project.config), [members, started, project.config]);
+  // 連続待ちの上限は、名簿全員ではなく今日の参加人数で決める（エンジンと同じ）
+  const dash = useMemo(() => buildDashboard(members, started, project.config, { attending: attending.length }), [members, started, project.config, attending.length]);
   const waitOf = useMemo(() => new Map(dash.people.rows.map((r) => [r.name, r.current_wait])), [dash]);
   const waitCap = dash.people.meta.wait_cap;
   const playing = new Set(inPlay.flatMap((m) => [...m.team_a, ...m.team_b]));

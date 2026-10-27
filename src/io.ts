@@ -6,6 +6,8 @@ import { memberPlayers, projectFromJson, type AppState, type Project } from "./s
 /**
  * デスクトップ版の project.json + players.json + matches.json を 1 つにまとめた形。
  * players はプロジェクトの名簿。database にはデータベース全体も入れておく（読み込むと足される）。
+ * members は名簿の名前（順も含む）。これがないと読み込み側は players の active な人だけを名簿にするので、
+ * 試合に出たあと休会にした人が名簿から落ちる
  */
 export function bundleJson(s: AppState, p: Project): string {
   return JSON.stringify(
@@ -20,6 +22,7 @@ export function bundleJson(s: AppState, p: Project): string {
       exported_at: new Date().toISOString(),
       engine_config: p.config,
       match_settings: p.settings,
+      members: p.members,
       selected_players: p.selected,
       players: memberPlayers(s, p),
       matches: p.matches,

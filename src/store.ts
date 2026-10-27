@@ -45,6 +45,8 @@ export interface AppState {
 
 const KEY = "doubles_kun_mobile.v2";
 const KEY_V1 = "doubles_kun_mobile.v1";
+/** 読めなかった保存データの退避先。初期状態で上書きする前に残しておく（復旧用） */
+export const KEY_BROKEN = "doubles_kun_mobile.v2.broken";
 
 export function newProject(name: string, base?: Partial<Project>): Project {
   const now = new Date().toISOString();
@@ -79,8 +81,9 @@ export function emptyState(): AppState {
 }
 
 export function loadState(): AppState {
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(KEY);
+    raw = localStorage.getItem(KEY);
     if (raw) return stateFromJson(JSON.parse(raw));
     // 旧版（プロジェクトが 1 つだけ）からの移行。旧データは念のため残す
     const old = localStorage.getItem(KEY_V1);
@@ -90,7 +93,15 @@ export function loadState(): AppState {
       return s;
     }
   } catch {
-    // 壊れていたら初期状態から
+    // 壊れていたら初期状態から。ただし次の保存で元のデータが上書きされるので、
+    // 読めなかった中身は別のキーに退避しておく（手で取り出して復旧できる）
+    if (raw) {
+      try {
+        localStorage.setItem(KEY_BROKEN, raw);
+      } catch {
+        // 退避もできなければあきらめる
+      }
+    }
   }
   return emptyState();
 }

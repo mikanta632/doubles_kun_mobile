@@ -59,7 +59,15 @@ export interface Dashboard {
   ranking: RankingRow[];
 }
 
-export function buildDashboard(players: readonly Player[], allMatches: readonly Match[], cfg: EngineConfig): Dashboard {
+export interface DashboardOptions {
+  /**
+   * 出席者数（今日試合に入れる人。コート上の人も含む）。連続待ちの上限はこの人数で決める。
+   * エンジン（GoodDayEngine.nAttending）と同じ数え方にするために渡す。省略時は players の人数
+   */
+  attending?: number;
+}
+
+export function buildDashboard(players: readonly Player[], allMatches: readonly Match[], cfg: EngineConfig, opts: DashboardOptions = {}): Dashboard {
   const courts = Math.max(1, cfg.courts);
   const nameSet = new Set(players.map((p) => p.name));
   const matches = allMatches.filter((m) => [...m.team_a, ...m.team_b].some((n) => nameSet.has(n)));
@@ -85,7 +93,8 @@ export function buildDashboard(players: readonly Player[], allMatches: readonly 
     weakWeight: cfg.pair_weak_weight,
     applyElo: cfg.elo_auto_update,
   });
-  const waitCap = waitCapFor(cfg, names.length, courts);
+  // 名簿全員ではなく出席者で数える。名簿 20 人・参加 9 人・1 面なら 7 ではなく 5（エンジンと同じ）
+  const waitCap = waitCapFor(cfg, opts.attending || names.length, courts);
 
   // 一人ひとり
   const persons = names.map((n) => report.persons.get(n)!).filter(Boolean);
