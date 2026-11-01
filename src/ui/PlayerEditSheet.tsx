@@ -1,12 +1,43 @@
+import type { JSX } from "preact";
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import type { Player } from "../core/models";
-import { deletePlayer, playedAnywhere, playedIn, renamePlayer } from "../store";
+import { deletePlayer, playedAnywhere, playedIn, playerHistory, renamePlayer } from "../store";
+import { whenWhere } from "./ProjectSheets";
 import { Sheet } from "./Sheet";
 import { Wheel, type WheelOption } from "./Wheel";
 
 /** 所属のドラムロールで「新しく入力」を選んだことを表す値 */
 const NEW_TEAM = " new";
+
+/** データベースに出てくる所属（五十音順） */
+export function teamsOf(db: readonly Player[]): string[] {
+  return [...new Set(db.map((p) => (p.team ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+/**
+ * 所属の入力欄。すでに誰かに入っている候補から選び、なければ新しく入力する。
+ * 返す team は空文字なら「なし」。
+ */
+export function useTeamField(teams: readonly string[], initial: string | null): [string, JSX.Element] {
+  const [choice, setChoice] = useState(initial && teams.includes(initial) ? initial : "");
+  const [text, setText] = useState("");
+  const options: WheelOption<string>[] = [
+    { value: "", label: "なし" },
+    ...teams.map((t) => ({ value: t, label: t })),
+    { value: NEW_TEAM, label: "新しく入力" },
+  ];
+  const field = (
+    <div class="field">
+      <span>所属</span>
+      <Wheel class="boxed" options={options} value={choice} onChange={setChoice} />
+      {choice === NEW_TEAM && (
+        <input type="text" placeholder="所属を入力" aria-label="所属を入力" value={text} onInput={(e) => setText((e.target as HTMLInputElement).value)} style="margin-top:6px" />
+      )}
+    </div>
+  );
+  return [choice === NEW_TEAM ? text.trim() : choice, field];
+}
 
 /**
  * データベース上のプレイヤーを編集する。名前の変更はすべてのプロジェクトの試合・名簿に反映する。
@@ -19,19 +50,10 @@ export function PlayerEditSheet({ player, state, project, update, notify, onRemo
   const isMember = project.members.includes(player.name);
   const playedHere = playedIn(project, player.name);
 
-  // 所属は、すでに誰かに入っている候補から選ぶ。なければ新しく入力する
-  const teams = useMemo(
-    () => [...new Set(state.db.map((p) => (p.team ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja")),
-    [state.db],
-  );
-  const teamOptions: WheelOption<string>[] = [
-    { value: "", label: "なし" },
-    ...teams.map((t) => ({ value: t, label: t })),
-    { value: NEW_TEAM, label: "新しく入力" },
-  ];
-  const [teamChoice, setTeamChoice] = useState(player.team && teams.includes(player.team) ? player.team : "");
-  const [teamText, setTeamText] = useState("");
-  const team = teamChoice === NEW_TEAM ? teamText.trim() : teamChoice;
+  const teams = useMemo(() => teamsOf(state.db), [state.db]);
+  const [team, teamField] = useTeamField(teams, player.team);
+  const history = useMemo(() => playerHistory(state, player.name), [state, player.name]);
+  const total = history.reduce((a, r) => ({ played: a.played + r.played, wins: a.wins + r.wins, losses: a.losses + r.losses }), { played: 0, wins: 0, losses: 0 });
 
   const save = () => {
     const newName = name.trim();
@@ -79,13 +101,7 @@ export function PlayerEditSheet({ player, state, project, update, notify, onRemo
           <input type="number" inputMode="numeric" value={rating} onInput={(e) => setRating((e.target as HTMLInputElement).value)} />
         </label>
       </div>
-      <div class="field">
-        <span>所属</span>
-        <Wheel class="boxed" options={teamOptions} value={teamChoice} onChange={setTeamChoice} />
-        {teamChoice === NEW_TEAM && (
-          <input type="text" placeholder="所属を入力" aria-label="所属を入力" value={teamText} onInput={(e) => setTeamText((e.target as HTMLInputElement).value)} style="margin-top:6px" />
-        )}
-      </div>
+      {teamField}
       <label class="check">
         <input type="checkbox" checked={!active} onChange={(e) => setActive(!(e.target as HTMLInputElement).checked)} />
         休会中（どのプロジェクトでも試合に入れない）
@@ -94,6 +110,25 @@ export function PlayerEditSheet({ player, state, project, update, notify, onRemo
         <button class="btn block" onClick={() => { onRemove(player.name); if (!playedHere) onClose(); }} disabled={playedHere}>
           {playedHere ? "試合に出ているので名簿から外せません" : "このプロジェクトの名簿から外す"}
         </button>
+      )}
+      {history.length > 0 && (
+        <section class="section">
+          <div class="section-h">
+            <h2>これまでの記録</h2>
+            <span class="mono">{total.played} 試合 {total.wins} 勝 {total.losses} 敗</span>
+          </div>
+          <div class={"panel" + (history.length > 5 ? " scroll" : "")}>
+            {history.map((r) => (
+              <div class="lrow static" key={r.project.id}>
+                <span class="body">
+                  <span style={r.project.id === project.id ? "font-weight:600" : ""}>{r.project.name}</span>
+                  <span class="sub mono">{whenWhere(r.project)}{r.member ? "" : "｜名簿外"}</span>
+                </span>
+                <span class="count">{r.played ? `${r.played} 試合 ${r.wins}-${r.losses}${r.draws ? `-${r.draws}` : ""}` : "試合なし"}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
       <div class="actions">
         <button class="btn danger tall" onClick={remove}>削除</button>

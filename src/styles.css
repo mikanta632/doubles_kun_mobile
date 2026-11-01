@@ -308,6 +308,8 @@ td.hot { background: #fbe9e7; color: var(--danger); font-weight: 600; }
 .sheet-head h2 { margin: 0; font-size: 19px; font-weight: 600; }
 .sheet .actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
 .sheet .scroll { max-height: 45dvh; overflow: auto; }
+/* まとめて操作のボタン。リストが長くても下に貼り付いて見える */
+.sheet .bulk { position: sticky; bottom: calc(-20px - env(safe-area-inset-bottom)); margin: 0 -20px calc(-20px - env(safe-area-inset-bottom)); padding: 10px 20px calc(12px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
 
 /* ドラムロール */
 .wheel-wrap { position: relative; overflow: hidden; }

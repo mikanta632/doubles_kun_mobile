@@ -1,9 +1,8 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
-import { newPlayer, type Player } from "../core/models";
+import { newPlayer } from "../core/models";
 import { addProject, newProject, playedIn, removeProject, todayIso, updateCurrent, type Project } from "../store";
-import { CheckIcon, ChevronRight, PlusIcon, SearchIcon } from "./icons";
-import { PlayerEditSheet } from "./PlayerEditSheet";
+import { CheckIcon, PlusIcon, SearchIcon } from "./icons";
 import { Sheet } from "./Sheet";
 
 /** 既定で出すプロジェクトの数 */
@@ -261,89 +260,6 @@ export function RosterPickSheet({ state, project, update, notify, onClose }: Vie
         <button class="btn tall" onClick={onClose}>キャンセル</button>
         <button class="btn primary tall" onClick={apply} disabled={picked.size === 0}>{picked.size} 人を名簿に入れる</button>
       </div>
-    </Sheet>
-  );
-}
-
-/** 設定から開く。全プロジェクト共通のメンバーの登録・編集。休会中の人もここで扱う */
-export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
-  const { state, project, update, notify, onClose } = props;
-  const [newName, setNewName] = useState("");
-  const [newRating, setNewRating] = useState("1500");
-  const [query, setQuery] = useState("");
-  const [editing, setEditing] = useState<Player | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
-  const memberSet = new Set(project.members);
-  const q = query.trim();
-  const shown = state.db.filter((p) => !q || p.name.includes(q) || (p.team ?? "").includes(q));
-  const active = shown.filter((p) => p.active);
-  const inactive = shown.filter((p) => !p.active);
-
-  const addPlayer = () => {
-    const name = newName.trim();
-    if (!name) return;
-    if (state.db.some((p) => p.name === name)) {
-      notify("同じ名前の人が登録されています。");
-      return;
-    }
-    const rating = Number(newRating);
-    // 登録した人は、そのまま開いているプロジェクトの名簿に入れる
-    update((s) => updateCurrent({ ...s, db: [...s.db, newPlayer(name, Number.isFinite(rating) ? rating : 1500)] }, (p) => ({ ...p, members: [...p.members, name], selected: [...p.selected, name] })));
-    setNewName("");
-    setNewRating("1500");
-  };
-
-  const row = (p: Player) => {
-    const on = memberSet.has(p.name);
-    return (
-      <div class={"member" + (p.active ? "" : " off")} key={p.name}>
-        <button class="who" onClick={() => setEditing(p)}>
-          <span class="nm">{p.name}</span>
-          <span class="tm">{p.team ?? "所属なし"}{p.active ? "" : "・休会中"}</span>
-        </button>
-        <span class="num"><b>{Math.round(p.rating)}</b></span>
-        <button class="btn act" style={"min-width:92px;padding:0 10px" + (on ? "" : ";color:var(--text-2);font-weight:500")} aria-pressed={on} onClick={() => toggleMember(props, p.name)} disabled={!p.active && !on}>
-          {on ? <><CheckIcon />名簿入り</> : "名簿へ"}
-        </button>
-      </div>
-    );
-  };
-
-  if (editing) return <PlayerEditSheet {...props} player={editing} onClose={() => setEditing(null)} />;
-
-  return (
-    <Sheet title="メンバーのデータベース" eyebrow={`${state.db.length} 人・全プロジェクト共通`} onClose={onClose}>
-      <div class="row">
-        <input class="grow" type="text" placeholder="名前" aria-label="名前" value={newName} onInput={(e) => setNewName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && addPlayer()} />
-        <input type="number" style="width:88px" inputMode="numeric" aria-label="レート" value={newRating} onInput={(e) => setNewRating((e.target as HTMLInputElement).value)} />
-        <button class="btn primary" onClick={addPlayer} disabled={!newName.trim()}>登録</button>
-      </div>
-      {state.db.length === 0 ? (
-        <div class="empty">登録がありません</div>
-      ) : (
-        <>
-          {state.db.length > 8 && (
-            <label class="search">
-              <SearchIcon />
-              <input type="search" placeholder="名前や所属で探す" aria-label="名前や所属で探す" value={query} onInput={(e) => setQuery((e.target as HTMLInputElement).value)} />
-            </label>
-          )}
-          <div class="panel">
-            {active.map(row)}
-            {active.length === 0 && <div class="empty">見つかりません</div>}
-          </div>
-          {inactive.length > 0 && (
-            <div class="panel">
-              <button class="lrow" aria-expanded={showInactive} onClick={() => setShowInactive(!showInactive)}>
-                <span class="body">休会中</span>
-                <span class="count">{inactive.length}</span>
-                <span class="chev" style={showInactive ? "transform:rotate(90deg)" : ""}><ChevronRight /></span>
-              </button>
-              {showInactive && inactive.map(row)}
-            </div>
-          )}
-        </>
-      )}
     </Sheet>
   );
 }

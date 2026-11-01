@@ -6,7 +6,7 @@ import { estimatePairModel, estimateSummary, isConclusive } from "../core/pairMo
 import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareText, todayStamp } from "../io";
 import { addProject, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
 import { ChevronRight } from "./icons";
-import { DatabaseSheet } from "./ProjectSheets";
+import { DatabaseSheet } from "./DatabaseSheet";
 import { Sheet } from "./Sheet";
 import { UpdateCard } from "./UpdateCard";
 
@@ -112,7 +112,7 @@ export function SettingsView(props: ViewProps) {
           <button class="lrow" onClick={() => setOpen("db")}>
             <span class="body">
               <span>メンバーのデータベース</span>
-              <span class="sub">全プロジェクト共通の登録・休会中の人</span>
+              <span class="sub">全プロジェクト共通の登録・まとめて編集・CSV の出し入れ</span>
             </span>
             <span class="count">{state.db.length}</span>
             <span class="chev"><ChevronRight /></span>

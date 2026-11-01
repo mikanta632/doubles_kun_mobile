@@ -15,7 +15,7 @@
 
 import { DEFAULT_CONFIG, DEFAULT_MATCH_SETTINGS, configFromJson, type EngineConfig, type MatchSettings } from "./core/config";
 import { recalculateAll } from "./core/elo";
-import { matchFromJson, playerFromJson, type Match, type Player } from "./core/models";
+import { matchFromJson, newPlayer, playerFromJson, type Match, type Player } from "./core/models";
 
 export interface Project {
   id: string;
@@ -255,10 +255,16 @@ export function renamePlayer(s: AppState, from: string, to: string): AppState {
 
 /** データベースから消す。名簿からも外す（試合には出ていない前提）。 */
 export function deletePlayer(s: AppState, name: string): AppState {
+  return deletePlayers(s, [name]);
+}
+
+export function deletePlayers(s: AppState, names: readonly string[]): AppState {
+  const set = new Set(names);
+  const keep = (n: string) => !set.has(n);
   return {
     ...s,
-    db: s.db.filter((p) => p.name !== name),
-    projects: s.projects.map((p) => ({ ...p, members: p.members.filter((n) => n !== name), selected: p.selected.filter((n) => n !== name) })),
+    db: s.db.filter((p) => keep(p.name)),
+    projects: s.projects.map((p) => ({ ...p, members: p.members.filter(keep), selected: p.selected.filter(keep) })),
   };
 }
 
@@ -267,6 +273,80 @@ export function mergePlayers(s: AppState, players: readonly Player[]): AppState 
   const byName = new Map(s.db.map((p) => [p.name, p]));
   for (const p of players) byName.set(p.name, { ...(byName.get(p.name) ?? p), ...p });
   return { ...s, db: [...byName.values()] };
+}
+
+/** 読み込んだ 1 人分。ファイルに無かった項目は undefined（登録済みの人の値を残す）。 */
+export type PlayerPatch = { name: string } & Partial<Omit<Player, "name">>;
+
+/**
+ * データベースに patches を足す。同じ名前の人は、ファイルにあった項目だけ上書きする。
+ * レートだけあって初期レートがないときは、初期レートも同じ値にする（編集画面でレートを変えたときと同じ）。
+ * 休会になった人は、どのプロジェクトでも試合の候補から外す。
+ */
+export function mergePlayerPatches(s: AppState, patches: readonly PlayerPatch[]): AppState {
+  const byName = new Map(s.db.map((p) => [p.name, p]));
+  for (const x of patches) {
+    const base = byName.get(x.name) ?? newPlayer(x.name);
+    byName.set(x.name, {
+      name: x.name,
+      rating: x.rating ?? base.rating,
+      initial_rating: x.initial_rating ?? x.rating ?? base.initial_rating,
+      team: x.team !== undefined ? x.team : base.team,
+      active: x.active ?? base.active,
+    });
+  }
+  const projects = s.projects.map((p) => ({ ...p, selected: p.selected.filter((n) => byName.get(n)?.active !== false) }));
+  return { ...s, db: [...byName.values()], projects };
+}
+
+/** 何人かの所属・休会をまとめて変える。休会にした人は、どのプロジェクトでも試合の候補から外す。 */
+export function updatePlayers(s: AppState, names: readonly string[], patch: Partial<Pick<Player, "team" | "active">>): AppState {
+  const set = new Set(names);
+  const db = s.db.map((p) => (set.has(p.name) ? { ...p, ...patch } : p));
+  const projects = patch.active === false ? s.projects.map((p) => ({ ...p, selected: p.selected.filter((n) => !set.has(n)) })) : s.projects;
+  return { ...s, db, projects };
+}
+
+/** いま開いているプロジェクトの名簿に入れる。試合に入れる人にも入れる（休会中の人は名簿だけ）。 */
+export function addMembers(s: AppState, names: readonly string[]): AppState {
+  const active = new Set(s.db.filter((p) => p.active).map((p) => p.name));
+  return updateCurrent(s, (p) => ({
+    ...p,
+    members: [...new Set([...p.members, ...names])],
+    selected: [...new Set([...p.selected, ...names.filter((n) => active.has(n))])],
+  }));
+}
+
+export interface ProjectRecord {
+  project: Project;
+  /** 名簿に入っているか */
+  member: boolean;
+  /** 結果の入った試合の数と勝敗 */
+  played: number;
+  wins: number;
+  losses: number;
+  draws: number;
+}
+
+/** その人が名簿に入っているか試合に出たプロジェクトと、そこでの成績。日付の新しい順。 */
+export function playerHistory(s: AppState, name: string): ProjectRecord[] {
+  const out: ProjectRecord[] = [];
+  for (const p of s.projects) {
+    const r: ProjectRecord = { project: p, member: p.members.includes(name), played: 0, wins: 0, losses: 0, draws: 0 };
+    let appeared = false;
+    for (const m of p.matches) {
+      const side = m.team_a.includes(name) ? "A" : m.team_b.includes(name) ? "B" : null;
+      if (side === null) continue;
+      appeared = true;
+      if (m.result === null) continue;
+      r.played++;
+      if (m.result === "D") r.draws++;
+      else if (m.result === side) r.wins++;
+      else r.losses++;
+    }
+    if (r.member || appeared) out.push(r);
+  }
+  return out.sort((a, b) => (b.project.date || "").localeCompare(a.project.date || "") || b.project.updated_at.localeCompare(a.project.updated_at));
 }
 
 /** いま開いているプロジェクトの試合から、データベースのレートを計算し直す。 */
