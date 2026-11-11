@@ -3,7 +3,7 @@ import type { ViewProps } from "../app";
 import { newMatch } from "../core/models";
 import { planSummary, type PlanResult } from "../core/planOptimizer";
 import type { PlanMessage, PlanRequest } from "../planWorker";
-import { attendingPlayers } from "../store";
+import { attendingPlayers, lateMaps } from "../store";
 import { Sheet } from "./Sheet";
 
 /** 試合タブ右上の「まとめて組む」。何試合ぶんかを一度に計画して、まとめて追加する */
@@ -44,7 +44,8 @@ export function PlanSheet({ state, project, updateProject, notify, onClose }: Vi
       w.terminate();
       workerRef.current = null;
     };
-    const req: PlanRequest = { players: available, past: project.matches, nMatches: count, config: project.config };
+    const { offsets } = lateMaps(project);
+    const req: PlanRequest = { players: available, past: project.matches, nMatches: count, config: project.config, basePlays: offsets.size ? Object.fromEntries(offsets) : undefined };
     w.postMessage(req);
   };
 

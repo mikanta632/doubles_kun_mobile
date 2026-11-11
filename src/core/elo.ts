@@ -17,10 +17,15 @@ export function teamRating(ratings: number[], weakWeight = DEFAULT_WEAK_WEIGHT):
 
 /** 各人の初期レートに戻し、全試合をリスト順に再計算する。players を書き換える。 */
 export function recalculateAll(players: Player[], matches: readonly Match[], opts: EloOptions = {}): void {
+  for (const p of players) p.rating = p.initial_rating;
+  applyMatches(players, matches, opts);
+}
+
+/** いまの rating から、試合をリスト順に当てていく（初期レートには戻さない）。players を書き換える。 */
+export function applyMatches(players: Player[], matches: readonly Match[], opts: EloOptions = {}): void {
   const k = opts.kFactor ?? 48;
   const w = opts.weakWeight ?? DEFAULT_WEAK_WEIGHT;
   const g = opts.gameScale ?? DEFAULT_GAME_SCALE;
-  for (const p of players) p.rating = p.initial_rating;
   const byName = new Map(players.map((p) => [p.name, p]));
   for (const m of matches) {
     if (!m.result) continue;

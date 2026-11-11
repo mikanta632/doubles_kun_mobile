@@ -14,7 +14,7 @@
  */
 
 import { DEFAULT_CONFIG, DEFAULT_MATCH_SETTINGS, configFromJson, type EngineConfig, type MatchSettings } from "./core/config";
-import { recalculateAll } from "./core/elo";
+import { applyMatches } from "./core/elo";
 import { matchFromJson, newPlayer, playerFromJson, type Match, type Player } from "./core/models";
 
 export interface Project {
@@ -33,6 +33,28 @@ export interface Project {
   members: string[];
   /** 試合に入れる人（名簿のうち） */
   selected: string[];
+  /** 遅れて来た人（名前 → 仮の試合数と来た時点）。組むときの出場回数と連続待ちに使う */
+  late: Record<string, LateJoin>;
+}
+
+/**
+ * 遅れて来た人の扱い。plays は「すでにこれだけ出た」とみなす試合数（実際の出場に足す）。
+ * at は来た時点（そのときの試合数）。連続待ちはここから数える（最初から待っていた扱いにしない）。
+ */
+export interface LateJoin {
+  plays: number;
+  at: number;
+}
+
+/** レートを計算し直す前の状態。「元に戻す」で使う */
+export interface RatingSnapshot {
+  /** いつ・何をする前か */
+  at: string;
+  label: string;
+  /** 名前 → rating */
+  ratings: Record<string, number>;
+  /** p を推定して変えたときの、元の値 */
+  weak?: { project: string; value: number };
 }
 
 export interface AppState {
@@ -43,7 +65,13 @@ export interface AppState {
   current: string;
   /** 見た目の設定（全プロジェクト共通） */
   prefs: Prefs;
+  /** 直前のレートの計算し直しを取り消すための控え（なければ null） */
+  rating_undo: RatingSnapshot | null;
+  /** 保存形式の版。2 で K の既定値を 48 → 20 に移した */
+  schema: number;
 }
+
+export const SCHEMA = 2;
 
 export interface Prefs {
   /** レートと勝率予想を画面に出さない（組み方や書き出しには使う。見えないだけ） */
@@ -71,6 +99,7 @@ export function newProject(name: string, base?: Partial<Project>): Project {
     settings: { ...DEFAULT_MATCH_SETTINGS },
     members: [],
     selected: [],
+    late: {},
   };
   // undefined の項目は既定値のまま（`id: d.id` のように渡せるように）
   for (const [k, v] of Object.entries(base ?? {})) if (v !== undefined) (p as unknown as Record<string, unknown>)[k] = v;
@@ -86,7 +115,13 @@ export function todayIso(): string {
 
 export function emptyState(): AppState {
   const p = newProject("ダブルスくん");
-  return { db: [], projects: [p], current: p.id, prefs: { ...DEFAULT_PREFS } };
+  return { db: [], projects: [p], current: p.id, prefs: { ...DEFAULT_PREFS }, rating_undo: null, schema: SCHEMA };
+}
+
+/** K の既定値を 48 から 20 に変えた（v0.9.0）。古い既定値のままのプロジェクトだけ 20 にする（一度だけ）。 */
+const OLD_DEFAULT_K = 48;
+function migrateK(projects: Project[]): Project[] {
+  return projects.map((p) => (p.config.elo_k_factor === OLD_DEFAULT_K ? { ...p, config: { ...p.config, elo_k_factor: DEFAULT_CONFIG.elo_k_factor } } : p));
 }
 
 export function loadState(): AppState {
@@ -126,7 +161,7 @@ export function saveState(s: AppState): void {
 /** 旧版の状態（players / matches / selected が 1 組）を、データベース + プロジェクト 1 つに直す。 */
 export function migrateV1(d: Record<string, unknown>): AppState {
   const { players, project } = projectFromJson(d);
-  return { db: players, projects: [project], current: project.id, prefs: { ...DEFAULT_PREFS } };
+  return { db: players, projects: migrateK([project]), current: project.id, prefs: { ...DEFAULT_PREFS }, rating_undo: null, schema: SCHEMA };
 }
 
 export function stateFromJson(d: Record<string, unknown>): AppState {
@@ -139,7 +174,30 @@ export function stateFromJson(d: Record<string, unknown>): AppState {
   const current = typeof d.current === "string" && projects.some((p) => p.id === d.current) ? d.current : projects[0].id;
   const prefsRaw = (d.prefs ?? {}) as Record<string, unknown>;
   const prefs: Prefs = { hide_ratings: Boolean(prefsRaw.hide_ratings) };
-  return { db, projects, current, prefs };
+  const schema = typeof d.schema === "number" ? d.schema : 1;
+  return {
+    db,
+    projects: schema < 2 ? migrateK(projects) : projects,
+    current,
+    prefs,
+    rating_undo: snapshotFromJson(d.rating_undo),
+    schema: SCHEMA,
+  };
+}
+
+function snapshotFromJson(v: unknown): RatingSnapshot | null {
+  if (!v || typeof v !== "object") return null;
+  const d = v as Record<string, unknown>;
+  if (!d.ratings || typeof d.ratings !== "object") return null;
+  const ratings: Record<string, number> = {};
+  for (const [k, x] of Object.entries(d.ratings as Record<string, unknown>)) if (typeof x === "number" && Number.isFinite(x)) ratings[k] = x;
+  const w = d.weak as Record<string, unknown> | undefined;
+  return {
+    at: typeof d.at === "string" ? d.at : "",
+    label: typeof d.label === "string" ? d.label : "",
+    ratings,
+    weak: w && typeof w.project === "string" && typeof w.value === "number" ? { project: w.project, value: w.value } : undefined,
+  };
 }
 
 /**
@@ -160,6 +218,13 @@ export function projectFromJson(d: Record<string, unknown>, known?: Set<string>)
   const selectedRaw = Array.isArray(d.selected) ? d.selected : Array.isArray(d.selected_players) ? d.selected_players : null;
   const selected = selectedRaw ? [...new Set((selectedRaw as unknown[]).map(String).filter((n) => memberSet.has(n)))] : [...members];
   const settingsRaw = (d.settings ?? d.match_settings) as Record<string, unknown> | undefined;
+  const late: Record<string, LateJoin> = {};
+  if (d.late && typeof d.late === "object") {
+    for (const [n, x] of Object.entries(d.late as Record<string, Record<string, unknown>>)) {
+      if (!memberSet.has(n) || !x || typeof x.plays !== "number" || !Number.isFinite(x.plays) || x.plays < 0) continue;
+      late[n] = { plays: Math.round(x.plays), at: typeof x.at === "number" && Number.isFinite(x.at) ? Math.max(0, Math.round(x.at)) : 0 };
+    }
+  }
   const project = newProject(typeof d.name === "string" && d.name.trim() ? d.name.trim() : "ダブルスくん", {
     id: typeof d.id === "string" && d.id ? d.id : undefined,
     date: typeof d.date === "string" ? d.date : undefined,
@@ -174,6 +239,7 @@ export function projectFromJson(d: Record<string, unknown>, known?: Set<string>)
     },
     members,
     selected,
+    late,
   });
   return { project, players };
 }
@@ -214,8 +280,27 @@ export function addProject(s: AppState, project: Project, open = true): AppState
 
 export function removeProject(s: AppState, id: string): AppState {
   const projects = s.projects.filter((p) => p.id !== id);
-  if (projects.length === 0) return { ...emptyState(), db: s.db, prefs: s.prefs };
+  if (projects.length === 0) return { ...emptyState(), db: s.db, prefs: s.prefs, rating_undo: s.rating_undo };
   return { ...s, projects, current: s.current === id ? projects[0].id : s.current };
+}
+
+// ---- 遅れて来た人 ----
+
+/** 組むときに足す仮の試合数と、来た時点（エンジン・一括計画・集計に渡す形） */
+export function lateMaps(p: Project): { offsets: Map<string, number>; joined: Map<string, number> } {
+  const entries = Object.entries(p.late).filter(([n]) => p.members.includes(n));
+  return { offsets: new Map(entries.map(([n, x]) => [n, x.plays])), joined: new Map(entries.map(([n, x]) => [n, x.at])) };
+}
+
+/**
+ * 遅れて来た人として記録する（plays は仮の試合数、0 でもよい）。null なら取り消す。
+ * 来た時点は、初めて記録したときの試合数（あとで試合数だけ変えても動かさない）。
+ */
+export function setLate(p: Project, name: string, plays: number | null): Project {
+  const late = { ...p.late };
+  if (plays === null) delete late[name];
+  else late[name] = { plays: Math.max(0, Math.round(plays)), at: p.late[name]?.at ?? p.matches.length };
+  return { ...p, late };
 }
 
 // ---- メンバーの 3 層 ----
@@ -260,8 +345,22 @@ export function renamePlayer(s: AppState, from: string, to: string): AppState {
       members: p.members.map(r),
       selected: p.selected.map(r),
       matches: p.matches.map((m) => ({ ...m, team_a: m.team_a.map(r), team_b: m.team_b.map(r) })),
+      late: renameKey(p.late, from, to),
     })),
+    rating_undo: s.rating_undo && { ...s.rating_undo, ratings: renameKey(s.rating_undo.ratings, from, to) },
   };
+}
+
+function renameKey<T>(o: Record<string, T>, from: string, to: string): Record<string, T> {
+  if (!(from in o)) return o;
+  const { [from]: v, ...rest } = o;
+  return { ...rest, [to]: v };
+}
+
+/** names を除いた late（名簿から外したとき・削除したとき） */
+export function dropLate(late: Record<string, LateJoin>, names: readonly string[]): Record<string, LateJoin> {
+  if (!names.some((n) => n in late)) return late;
+  return Object.fromEntries(Object.entries(late).filter(([n]) => !names.includes(n)));
 }
 
 /** データベースから消す。名簿からも外す（試合には出ていない前提）。 */
@@ -275,7 +374,7 @@ export function deletePlayers(s: AppState, names: readonly string[]): AppState {
   return {
     ...s,
     db: s.db.filter((p) => keep(p.name)),
-    projects: s.projects.map((p) => ({ ...p, members: p.members.filter(keep), selected: p.selected.filter(keep) })),
+    projects: s.projects.map((p) => ({ ...p, members: p.members.filter(keep), selected: p.selected.filter(keep), late: dropLate(p.late, names) })),
   };
 }
 
@@ -355,11 +454,55 @@ export function playerHistory(s: AppState, name: string): ProjectRecord[] {
   return out.sort((a, b) => (b.project.date || "").localeCompare(a.project.date || "") || b.project.updated_at.localeCompare(a.project.updated_at));
 }
 
-/** いま開いているプロジェクトの試合から、データベースのレートを計算し直す。 */
-export function recalcRatings(s: AppState, force = false): AppState {
-  const p = currentProject(s);
-  if (!force && !p.config.elo_auto_update) return s;
-  const db = s.db.map((x) => ({ ...x }));
-  recalculateAll(db, p.matches, { kFactor: p.config.elo_k_factor, weakWeight: p.config.pair_weak_weight, gameScale: p.config.game_scale });
+/** レートの計算で試合を流す順：開催日の古い順（日付未定は最後）、同じ日なら作った順。プロジェクトの中は一覧の順。 */
+export function projectsInPlayOrder(s: AppState): Project[] {
+  return [...s.projects].sort((a, b) => Number(!a.date) - Number(!b.date) || a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at));
+}
+
+/**
+ * データベースのレートを、初期レートから全プロジェクトの試合で計算し直す。
+ * K・p・G は試合ごとに、その試合のプロジェクトの設定を使う。
+ */
+export function recalcGlobal(s: AppState): AppState {
+  const db = s.db.map((x) => ({ ...x, rating: x.initial_rating }));
+  for (const p of projectsInPlayOrder(s)) {
+    applyMatches(db, p.matches, { kFactor: p.config.elo_k_factor, weakWeight: p.config.pair_weak_weight, gameScale: p.config.game_scale });
+  }
   return { ...s, db };
+}
+
+/**
+ * 状態が変わるたびに呼ぶ。開いているプロジェクトで「試合結果でレートを自動更新」が ON なら、全試合で計算し直す。
+ * （開いているプロジェクトの試合だけで計算すると、プロジェクトを切り替えるたびにレートが変わってしまう）
+ */
+export function recalcRatings(s: AppState, force = false): AppState {
+  if (!force && !currentProject(s).config.elo_auto_update) return s;
+  return recalcGlobal(s);
+}
+
+/** 自動更新が ON か（ON のときは、計算し直しの取り消しがすぐ上書きされるので出さない） */
+export function autoRating(s: AppState): boolean {
+  return currentProject(s).config.elo_auto_update;
+}
+
+/** いまのレート（と p）を控えてから fn を当てる。「元に戻す」で控えに戻せる。 */
+export function withRatingUndo(s: AppState, label: string, fn: (s: AppState) => AppState, weakOf?: Project): AppState {
+  const snap: RatingSnapshot = {
+    at: new Date().toISOString(),
+    label,
+    ratings: Object.fromEntries(s.db.map((p) => [p.name, p.rating])),
+    weak: weakOf ? { project: weakOf.id, value: weakOf.config.pair_weak_weight } : undefined,
+  };
+  return { ...fn(s), rating_undo: snap };
+}
+
+/** 控えに戻す。消えた人・消えたプロジェクトは飛ばす。 */
+export function undoRatings(s: AppState): AppState {
+  const u = s.rating_undo;
+  if (!u) return s;
+  const db = s.db.map((p) => (p.name in u.ratings ? { ...p, rating: u.ratings[p.name] } : p));
+  const projects = u.weak
+    ? s.projects.map((p) => (p.id === u.weak!.project ? { ...p, config: { ...p.config, pair_weak_weight: u.weak!.value } } : p))
+    : s.projects;
+  return { ...s, db, projects, rating_undo: null };
 }

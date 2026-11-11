@@ -18,7 +18,7 @@ export interface EngineConfig {
 }
 
 export const DEFAULT_CONFIG: EngineConfig = {
-  elo_k_factor: 48,
+  elo_k_factor: 20,
   elo_auto_update: false,
   game_scale: 500,
   pair_weak_weight: 0.5,

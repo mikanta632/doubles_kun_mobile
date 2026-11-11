@@ -2,15 +2,15 @@ import { useRef, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import type { EngineConfig } from "../core/config";
 import { DEFAULT_CONFIG } from "../core/config";
-import { estimatePairModel, estimateSummary, isConclusive } from "../core/pairModelEstimator";
 import { bundleJson, downloadText, matchesJson, parseImport, playersJson, shareText, todayStamp } from "../io";
-import { addProject, emptyState, mergePlayers, recalcRatings, updateCurrent, type Project } from "../store";
+import { addProject, emptyState, mergePlayers, updateCurrent, type Project } from "../store";
 import { ChevronRight } from "./icons";
 import { DatabaseSheet } from "./DatabaseSheet";
+import { MatchListSheet } from "./MatchListSheet";
 import { Sheet } from "./Sheet";
 import { UpdateCard } from "./UpdateCard";
 
-type Open = null | "db" | "advanced" | "export";
+type Open = null | "db" | "matches" | "advanced" | "export";
 
 export function SettingsView(props: ViewProps) {
   const { state, project, update, updateProject, notify } = props;
@@ -130,6 +130,14 @@ export function SettingsView(props: ViewProps) {
             <span class="count">{state.db.length}</span>
             <span class="chev"><ChevronRight /></span>
           </button>
+          <button class="lrow" onClick={() => setOpen("matches")}>
+            <span class="body">
+              <span>試合の一覧</span>
+              <span class="sub">全プロジェクトの試合。レートの計算し直し・p の推定・元に戻す</span>
+            </span>
+            <span class="count">{state.projects.reduce((a, p) => a + p.matches.length, 0)}</span>
+            <span class="chev"><ChevronRight /></span>
+          </button>
           <button class="lrow" onClick={() => setOpen("export")}>
             <span class="body">
               <span>書き出す</span>
@@ -166,6 +174,7 @@ export function SettingsView(props: ViewProps) {
       </section>
 
       {open === "db" && <DatabaseSheet {...props} onClose={() => setOpen(null)} />}
+      {open === "matches" && <MatchListSheet {...props} onClose={() => setOpen(null)} />}
       {open === "advanced" && <AdvancedSheet {...props} setCfg={setCfg} onClose={() => setOpen(null)} />}
       {open === "export" && <ExportSheet {...props} onClose={() => setOpen(null)} />}
     </>
@@ -208,27 +217,10 @@ function ExportSheet({ state, project, onClose }: ViewProps & { onClose: () => v
   );
 }
 
-function AdvancedSheet({ state, project, update, notify, setCfg, onClose }: ViewProps & { setCfg: (patch: Partial<EngineConfig>) => void; onClose: () => void }) {
+/** 詳細設定。レートの計算し直しと p の推定は「データ → 試合の一覧」で行う（全プロジェクトの試合を使うので） */
+function AdvancedSheet({ project, setCfg, onClose }: ViewProps & { setCfg: (patch: Partial<EngineConfig>) => void; onClose: () => void }) {
   const cfg = project.config;
   const band = Math.round(cfg.day_win_prob_min * 100);
-  const [estimate, setEstimate] = useState<string | null>(null);
-
-  const recalc = () => {
-    update((s) => recalcRatings(s, true));
-    notify("初期レートとこのプロジェクトの試合結果から、現在のレートを計算し直しました。");
-  };
-
-  const runEstimate = () => {
-    const ratings = new Map(state.db.map((p) => [p.name, p.initial_rating]));
-    // G は設定の値に固定して p だけを推定する（反映するのは p だけなので）
-    const e = estimatePairModel(project.matches, ratings, project.config.game_scale);
-    if (!e) {
-      notify("推定に使える試合がありません。ゲーム数の入った結果が必要です。");
-      return;
-    }
-    setEstimate(estimateSummary(e));
-    if (isConclusive(e)) setCfg({ pair_weak_weight: e.weak_weight });
-  };
 
   return (
     <Sheet title="詳細設定" eyebrow={project.name} onClose={onClose}>
@@ -244,10 +236,7 @@ function AdvancedSheet({ state, project, update, notify, setCfg, onClose }: View
         <NumberField label="ペア強度の弱い側の重み p（0.5 は単純平均）" value={cfg.pair_weak_weight} min={0.2} max={0.8} step={0.01} onChange={(v) => setCfg({ pair_weak_weight: v })} />
         <NumberField label="Elo の K 係数" value={cfg.elo_k_factor} min={1} max={100} onChange={(v) => setCfg({ elo_k_factor: v })} />
       </div>
-      {estimate && <div class="plan-summary">{estimate}</div>}
       <div class="row wrap">
-        <button class="btn" onClick={runEstimate}>試合結果から p を推定</button>
-        <button class="btn" onClick={recalc}>レートを再計算</button>
         <button class="btn" onClick={() => { if (confirm("詳細設定を既定値に戻しますか？")) setCfg({ ...DEFAULT_CONFIG, courts: cfg.courts, elo_auto_update: cfg.elo_auto_update }); }}>既定値に戻す</button>
       </div>
     </Sheet>

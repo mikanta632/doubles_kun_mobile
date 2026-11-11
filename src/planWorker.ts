@@ -9,6 +9,8 @@ export interface PlanRequest {
   past: Match[];
   nMatches: number;
   config: EngineConfig;
+  /** 遅れて来た人の仮の試合数 */
+  basePlays?: Record<string, number>;
 }
 
 export type PlanMessage =
@@ -16,10 +18,11 @@ export type PlanMessage =
   | { type: "done"; result: null | { matches: string[][][]; plays_spread: number; dyad_max: number; dyad_over: number; pair_repeats: number; out_of_band: number; max_wait: number; conflicts: number; courts: number } };
 
 self.onmessage = (ev: MessageEvent<PlanRequest>) => {
-  const { players, past, nMatches, config } = ev.data;
+  const { players, past, nMatches, config, basePlays } = ev.data;
   let last = 0;
   const r = optimizePlan(players, past, nMatches, {
     config,
+    basePlays: basePlays ? new Map(Object.entries(basePlays)) : undefined,
     progress: (done, total) => {
       const now = Date.now();
       if (now - last > 100 || done === total) {

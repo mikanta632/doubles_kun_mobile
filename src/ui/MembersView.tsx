@@ -80,7 +80,7 @@ export function MembersView(props: ViewProps) {
                 </button>
                 <span class="num">
                   {!state.prefs.hide_ratings && <b>{Math.round(p.rating)}</b>}
-                  <span>出場 {plays.get(p.name) ?? 0}</span>
+                  <span>出場 {plays.get(p.name) ?? 0}{project.late[p.name]?.plays ? ` (+${project.late[p.name].plays})` : ""}</span>
                 </span>
                 <label class="tick">
                   <input type="checkbox" checked={isIn(p)} disabled={!p.active} onChange={() => toggle(p.name)} aria-label={`${p.name}を今日の試合に入れる`} />

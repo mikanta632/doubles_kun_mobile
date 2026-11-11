@@ -1,10 +1,10 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
-import { GoodDayEngine, notesOf } from "../core/dayEngine";
+import { GoodDayEngine, countPlays, notesOf } from "../core/dayEngine";
 import { pairingToMatch, type Match, type MatchPairing, type MatchResult } from "../core/models";
 import { gameWinProb, pairStrength } from "../core/winModel";
 import { buildDashboard } from "../dashboard";
-import { attendingPlayers, availablePlayers, memberPlayers, type Project } from "../store";
+import { attendingPlayers, availablePlayers, lateMaps, memberPlayers, type Project } from "../store";
 import { CheckIcon, ChevronDown, ChevronLeft, ChevronRight, LayersIcon, NoteIcon, PlusIcon } from "./icons";
 import { PlanSheet } from "./PlanSheet";
 import { ProjectsSheet, whenWhere } from "./ProjectSheets";
@@ -61,7 +61,8 @@ export function MatchesView(props: ViewProps) {
   // 出番待ちの人：コートに入っていない参加者。連続で休んだラウンド数は、始まった試合（進行中と終了）だけで数える
   const started = useMemo(() => project.matches.filter((m) => m.in_play || isDone(m)), [project.matches]);
   // 連続待ちの上限は、名簿全員ではなく今日の参加人数で決める（エンジンと同じ）
-  const dash = useMemo(() => buildDashboard(members, started, project.config, { attending: attending.length }), [members, started, project.config, attending.length]);
+  const late = useMemo(() => lateMaps(project), [project]);
+  const dash = useMemo(() => buildDashboard(members, started, project.config, { attending: attending.length, joined: late.joined }), [members, started, project.config, attending.length, late]);
   const waitOf = useMemo(() => new Map(dash.people.rows.map((r) => [r.name, r.current_wait])), [dash]);
   const waitCap = dash.people.meta.wait_cap;
   const playing = new Set(inPlay.flatMap((m) => [...m.team_a, ...m.team_b]));
@@ -77,11 +78,16 @@ export function MatchesView(props: ViewProps) {
       notify("組める人が 4 人未満です。メンバータブで参加を確認してください。");
       return;
     }
+    // 遅れて来た人は、仮の試合数を出場回数に足し、連続待ちは来た時点から数える
+    const plays = countPlays(candidates, project.matches);
+    for (const [n, x] of late.offsets) if (plays.has(n)) plays.set(n, plays.get(n)! + x);
     const engine = new GoodDayEngine(candidates, project.matches, {
       config: project.config,
       courts,
       freeCourts: forNow ? Math.max(1, courts - inPlay.length) : 1,
       allPlayers: state.db,
+      plays,
+      joined: late.joined,
     });
     const cands = engine.generateCandidates(project.settings.rating_match, project.settings.avoid_same_team);
     if (cands.length === 0) {

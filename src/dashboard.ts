@@ -65,6 +65,8 @@ export interface DashboardOptions {
    * エンジン（GoodDayEngine.nAttending）と同じ数え方にするために渡す。省略時は players の人数
    */
   attending?: number;
+  /** 遅れて来た人 → 来た時点の試合数。来る前のラウンドは連続待ちに数えない */
+  joined?: ReadonlyMap<string, number>;
 }
 
 export function buildDashboard(players: readonly Player[], allMatches: readonly Match[], cfg: EngineConfig, opts: DashboardOptions = {}): Dashboard {
@@ -92,6 +94,7 @@ export function buildDashboard(players: readonly Player[], allMatches: readonly 
     gameScale: cfg.game_scale,
     weakWeight: cfg.pair_weak_weight,
     applyElo: cfg.elo_auto_update,
+    joined: opts.joined,
   });
   // 名簿全員ではなく出席者で数える。名簿 20 人・参加 9 人・1 面なら 7 ではなく 5（エンジンと同じ）
   const waitCap = waitCapFor(cfg, opts.attending || names.length, courts);

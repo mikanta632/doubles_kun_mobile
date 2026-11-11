@@ -95,7 +95,7 @@ class Plan {
   close = 0;
   slots: string[][];
 
-  constructor(names: string[], ratings: Map<string, number>, history: Four[], cfg: EngineConfig, rng: PyRandom, nNew: number, courts: number, firstSize?: number, locked?: Set<string>) {
+  constructor(names: string[], ratings: Map<string, number>, history: Four[], cfg: EngineConfig, rng: PyRandom, nNew: number, courts: number, firstSize?: number, locked?: Set<string>, basePlays?: ReadonlyMap<string, number>) {
     this.names = [...names];
     this.nameset = new Set(this.names);
     this.ratings = ratings;
@@ -103,7 +103,8 @@ class Plan {
     this.rng = rng;
     this.n = nNew;
     this.courts = courts;
-    for (const x of this.names) this.plays.set(x, 0);
+    // basePlays は遅れて来た人の仮の試合数（実際の出場に足す）
+    for (const x of this.names) this.plays.set(x, basePlays?.get(x) ?? 0);
     for (const f of history) this.count(f, +1, true);
     this.hDyad = new Map(this.dyad);
     this.hPair = new Map(this.pair);
@@ -336,6 +337,8 @@ export interface PlanOptions {
   seed?: number | bigint;
   progress?: ProgressFn;
   stop?: StopFn;
+  /** 遅れて来た人の仮の試合数（実際の出場に足す） */
+  basePlays?: ReadonlyMap<string, number>;
 }
 
 /**
@@ -373,7 +376,7 @@ export function optimizePlan(players: readonly Player[], pastMatches: readonly M
   const oi = opts.orderIters ?? Math.max(10000, 1000 * nMatches);
   const total = si + oi;
 
-  const plan = new Plan(names, ratings, history, cfg, rng, nMatches, courts, firstSize, locked);
+  const plan = new Plan(names, ratings, history, cfg, rng, nMatches, courts, firstSize, locked, opts.basePlays);
   optimizeSet(plan, si, opts.progress, opts.stop, 0, total);
   if (opts.stop && opts.stop()) return null;
 

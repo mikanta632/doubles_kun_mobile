@@ -24,6 +24,7 @@ export function bundleJson(s: AppState, p: Project): string {
       match_settings: p.settings,
       members: p.members,
       selected_players: p.selected,
+      late: p.late,
       players: memberPlayers(s, p),
       matches: p.matches,
       database: s.db,

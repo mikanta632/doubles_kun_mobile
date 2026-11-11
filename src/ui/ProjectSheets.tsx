@@ -1,7 +1,7 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import { newPlayer } from "../core/models";
-import { addProject, newProject, playedIn, removeProject, todayIso, updateCurrent, type Project } from "../store";
+import { addProject, dropLate, newProject, playedIn, removeProject, todayIso, updateCurrent, type Project } from "../store";
 import { CheckIcon, PlusIcon, SearchIcon } from "./icons";
 import { Sheet } from "./Sheet";
 
@@ -31,7 +31,7 @@ export function toggleMember({ project, updateProject, notify }: Pick<ViewProps,
       notify("このプロジェクトの試合に出ている人は名簿から外せません。参加のチェックを外してください。");
       return;
     }
-    updateProject((p) => ({ ...p, members: p.members.filter((n) => n !== name), selected: p.selected.filter((n) => n !== name) }));
+    updateProject((p) => ({ ...p, members: p.members.filter((n) => n !== name), selected: p.selected.filter((n) => n !== name), late: dropLate(p.late, [name]) }));
   } else {
     updateProject((p) => ({ ...p, members: [...p.members, name], selected: [...p.selected, name] }));
   }

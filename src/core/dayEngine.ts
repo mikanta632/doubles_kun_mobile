@@ -96,9 +96,13 @@ export class DayLedger {
   /** 全く同じ組み合わせ（同じ 2 ペア）の回数 */
   matchCount = new Map<string, number>();
   contacts = new Map<string, Set<string>>();
+  /** 遅れて来た人が来たラウンド。連続待ちはここから数える */
+  joinedRound = new Map<string, number>();
 
-  constructor(pastMatches: readonly Match[], courts: number) {
+  /** joined: 遅れて来た人 → 来た時点の試合数（省略時は全員最初からいたとみなす） */
+  constructor(pastMatches: readonly Match[], courts: number, joined?: ReadonlyMap<string, number>) {
     this.courts = Math.max(1, courts);
+    for (const [n, at] of joined ?? []) this.joinedRound.set(n, Math.floor(at / this.courts));
     this.turn = pastMatches.length;
     this.round = Math.floor(this.turn / this.courts);
     pastMatches.forEach((m, i) => {
@@ -136,8 +140,9 @@ export class DayLedger {
   }
 
   waitedRounds(name: string): number {
-    const last = this.lastPlayedRound.get(name);
-    if (last === undefined) return this.round;
+    // 遅れて来た人は、来たラウンドの直前に出たのと同じ扱い（来る前の分を待ちに数えない）
+    const joined = this.joinedRound.get(name);
+    const last = Math.max(this.lastPlayedRound.get(name) ?? -1, joined === undefined ? -1 : joined - 1);
     return Math.max(0, this.round - last - 1);
   }
 
@@ -233,6 +238,8 @@ export interface EngineOptions {
   rng?: PyRandom;
   /** 出場回数（省略時は past_matches から数える） */
   plays?: Map<string, number>;
+  /** 遅れて来た人 → 来た時点の試合数。連続待ちをそこから数える */
+  joined?: ReadonlyMap<string, number>;
 }
 
 export class GoodDayEngine {
@@ -271,7 +278,8 @@ export class GoodDayEngine {
     for (const p of opts.allPlayers ?? []) this.ratingOf.set(p.name, p.rating);
     for (const p of this.players) this.ratingOf.set(p.name, p.rating);
     this.plays = opts.plays ?? countPlays(this.players, this.pastMatches);
-    this.ledger = new DayLedger(this.pastMatches, this.courts);
+    this.ledger = new DayLedger(this.pastMatches, this.courts, opts.joined);
+    if (opts.joined && opts.joined.size > 0) this.setVirtualDyads(opts.joined);
     // 出席者 = 出場候補 + いまコートに入っている人。人数から決まる上限（連続待ち・
     // 同席回数）と実力帯の境界はこれで数える。候補だけで数えると、コートが
     // 使用中のあいだ人数が減って上限が急に下がる（10人2面で 4 → 1）。
@@ -284,6 +292,41 @@ export class GoodDayEngine {
       if (r !== undefined) rs.push(r);
     }
     this.cutoffs = bandCutoffs(rs);
+  }
+
+  /**
+   * 遅れて来た人の仮の同席回数。まだ誰とも同席していないと、どの組でも「同席が少ない」ので
+   * 選ばれ続ける（同席回数は出場回数の公平さより優先して見るため）。
+   * 仮の試合数ぶん出ていたとみなし、ほかの人どうしの平均の同席回数をその割合で持たせる。
+   */
+  virtualDyad = new Map<string, number>();
+
+  private setVirtualDyads(joined: ReadonlyMap<string, number>): void {
+    const regulars = this.players.filter((p) => !joined.has(p.name)).map((p) => p.name);
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < regulars.length; i++)
+      for (let j = i + 1; j < regulars.length; j++) {
+        sum += this.ledger.dyadCount.get(pairKey(regulars[i], regulars[j])) ?? 0;
+        n++;
+      }
+    const meanDyad = n ? sum / n : 0;
+    const meanPlays = regulars.length ? regulars.reduce((a, x) => a + (this.plays.get(x) ?? 0), 0) / regulars.length : 0;
+    const actual = countPlays(this.players, this.pastMatches);
+    for (const name of joined.keys()) {
+      // 仮の試合数 = 渡された出場回数 − 実際の出場回数
+      const virtualPlays = Math.max(0, (this.plays.get(name) ?? 0) - (actual.get(name) ?? 0));
+      const share = meanPlays > 0 ? Math.min(1, virtualPlays / meanPlays) : 0;
+      const v = Math.round(meanDyad * share);
+      if (v > 0) this.virtualDyad.set(name, v);
+    }
+  }
+
+  /** 同席回数（遅れて来た人は仮の分を足す） */
+  dyadCountOf(a: string, b: string): number {
+    const real = this.ledger.dyadCount.get(pairKey(a, b)) ?? 0;
+    if (this.virtualDyad.size === 0) return real;
+    return real + Math.max(this.virtualDyad.get(a) ?? 0, this.virtualDyad.get(b) ?? 0);
   }
 
   dyadCap(nPlayers = this.nAttending): number {
@@ -490,7 +533,7 @@ export class GoodDayEngine {
       for (let i = 0; i < 4; i++)
         for (let j = i + 1; j < 4; j++) {
           const key = pairKey(names[i], names[j]);
-          const count = this.ledger.dyadCount.get(key) ?? 0;
+          const count = this.dyadCountOf(names[i], names[j]);
           repeat += Math.log1p(count);
           repeatExcess += Math.max(0, count - 1);
           repeatMax = Math.max(repeatMax, count);

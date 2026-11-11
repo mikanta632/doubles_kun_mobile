@@ -80,6 +80,8 @@ export interface MetricsOptions {
   weakGap?: number;
   nBands?: number;
   applyElo?: boolean;
+  /** 遅れて来た人 → 来た時点の試合数。来る前のラウンドは待ちに数えない */
+  joined?: ReadonlyMap<string, number>;
 }
 
 export function computeDayMetrics(matches: readonly Match[], ratings: Map<string, number>, present?: Iterable<string>, opts: MetricsOptions = {}): DayReport {
@@ -178,6 +180,8 @@ export function computeDayMetrics(matches: readonly Match[], ratings: Map<string
     for (const [n, d] of updates) current.set(n, current.get(n)! + d);
     for (const n of presentSet) {
       const pm = persons.get(n)!;
+      const at = opts.joined?.get(n);
+      if (at !== undefined && rnd < Math.floor(at / courts)) continue;
       if (played.has(n)) pm.current_wait = 0;
       else {
         pm.current_wait++;
