@@ -33,10 +33,20 @@ function Kpi({ c }: { c: Card }) {
 export function DashboardView({ state, project, go }: ViewProps) {
   const [seg, setSeg] = useState<Seg>("ranking");
   // 連続待ちの上限は、名簿全員ではなく今日の参加人数で決める（エンジンと同じ）
-  const d = useMemo(
-    () => buildDashboard(memberPlayers(state, project), project.matches, project.config, { attending: attendingPlayers(state, project).length }),
-    [state, project],
-  );
+  const hide = state.prefs.hide_ratings;
+  const d = useMemo(() => {
+    const d = buildDashboard(memberPlayers(state, project), project.matches, project.config, { attending: attendingPlayers(state, project).length });
+    if (!hide) return d;
+    // レートを隠す設定なら、レート順の並び（対戦表・時系列、出場と待ちの同順位）を名前順にする。並びでレートが分かるので
+    const byName = (a: string, b: string) => a.localeCompare(b, "ja");
+    const rows = [...d.people.rows].sort((a, b) => a.plays - b.plays || b.current_wait - a.current_wait || byName(a.name, b.name));
+    return {
+      ...d,
+      people: { ...d.people, rows },
+      contacts: { ...d.contacts, names: [...d.contacts.names].sort(byName) },
+      timeline: { ...d.timeline, names: [...d.timeline.names].sort(byName) },
+    };
+  }, [state, project, hide]);
 
   if (d.people.rows.length === 0) {
     return (
