@@ -105,3 +105,12 @@ describe("K の既定値", () => {
     expect(again.projects[0].config.elo_k_factor).toBe(48);
   });
 });
+
+describe("元に戻すの控え", () => {
+  it("読み込みでレートが変わったら控えを捨てる", async () => {
+    const { mergePlayerPatches, mergePlayers } = await import("../src/store");
+    const s0: AppState = { ...emptyState(), db: [newPlayer("A")], rating_undo: { at: "", label: "x", ratings: { A: 1400 } } };
+    expect(mergePlayerPatches(s0, [{ name: "A", rating: 1600 }]).rating_undo).toBeNull();
+    expect(mergePlayers(s0, [newPlayer("A", 1600)]).rating_undo).toBeNull();
+  });
+});

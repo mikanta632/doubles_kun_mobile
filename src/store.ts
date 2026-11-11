@@ -382,7 +382,8 @@ export function deletePlayers(s: AppState, names: readonly string[]): AppState {
 export function mergePlayers(s: AppState, players: readonly Player[]): AppState {
   const byName = new Map(s.db.map((p) => [p.name, p]));
   for (const p of players) byName.set(p.name, { ...(byName.get(p.name) ?? p), ...p });
-  return { ...s, db: [...byName.values()] };
+  // レートが変わるので、計算し直しの控えは捨てる（あとで元に戻すと読み込んだ分が消える）
+  return { ...s, db: [...byName.values()], rating_undo: null };
 }
 
 /** 読み込んだ 1 人分。ファイルに無かった項目は undefined（登録済みの人の値を残す）。 */
@@ -406,7 +407,7 @@ export function mergePlayerPatches(s: AppState, patches: readonly PlayerPatch[])
     });
   }
   const projects = s.projects.map((p) => ({ ...p, selected: p.selected.filter((n) => byName.get(n)?.active !== false) }));
-  return { ...s, db: [...byName.values()], projects };
+  return { ...s, db: [...byName.values()], projects, rating_undo: null };
 }
 
 /** 何人かの所属・休会をまとめて変える。休会にした人は、どのプロジェクトでも試合の候補から外す。 */

@@ -99,7 +99,9 @@ export function PlayerEditSheet({ player, state, project, update, notify, onClos
       });
       // 休会中にした人は、どのプロジェクトでも試合の候補から外す
       const projects = active ? s.projects : s.projects.map((p) => ({ ...p, selected: p.selected.filter((n) => n !== newName) }));
-      return { ...s, db, projects };
+      // レートを変えたら、計算し直しの控えは捨てる（あとで元に戻すとこの変更が消える）
+      const rateChanged = Number.isFinite(r) && r !== player.initial_rating;
+      return { ...s, db, projects, rating_undo: rateChanged ? null : s.rating_undo };
     });
     onClose();
   };

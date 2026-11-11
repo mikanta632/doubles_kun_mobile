@@ -1,7 +1,7 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import { CONTACT_ALERT, buildDashboard, type Card } from "../dashboard";
-import { attendingPlayers, memberPlayers } from "../store";
+import { attendingPlayers, lateMaps, memberPlayers } from "../store";
 import { NoteIcon } from "./icons";
 
 type Seg = "ranking" | "people" | "contacts" | "timeline";
@@ -35,7 +35,8 @@ export function DashboardView({ state, project, go }: ViewProps) {
   // 連続待ちの上限は、名簿全員ではなく今日の参加人数で決める（エンジンと同じ）
   const hide = state.prefs.hide_ratings;
   const d = useMemo(() => {
-    const d = buildDashboard(memberPlayers(state, project), project.matches, project.config, { attending: attendingPlayers(state, project).length });
+    // 遅れて来た人の連続待ちは来た時点から数える（試合タブと同じ）
+    const d = buildDashboard(memberPlayers(state, project), project.matches, project.config, { attending: attendingPlayers(state, project).length, joined: lateMaps(project).joined });
     if (!hide) return d;
     // レートを隠す設定なら、レート順の並び（対戦表・時系列、出場と待ちの同順位）を名前順にする。並びでレートが分かるので
     const byName = (a: string, b: string) => a.localeCompare(b, "ja");
