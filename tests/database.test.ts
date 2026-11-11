@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { newMatch, newPlayer } from "../src/core/models";
 import { databaseCsv, databaseJson, parseCsv, parseDatabaseFile } from "../src/io";
-import { addMembers, deletePlayers, emptyState, mergePlayerPatches, newProject, playerHistory, updatePlayers, type AppState } from "../src/store";
+import { deletePlayers, emptyState, mergePlayerPatches, newProject, playerHistory, registerPlayer, updatePlayers, type AppState } from "../src/store";
 
 function fixture(): AppState {
   const db = [newPlayer("A", 1600, "総務"), newPlayer("B", 1500, "研究"), newPlayer("C"), newPlayer("D")];
@@ -90,12 +90,18 @@ describe("まとめて操作", () => {
     expect(s.projects[1].members).toEqual(["A", "C"]);
   });
 
-  it("名簿に入れる。休会中の人は試合の候補には入れない", () => {
+  it("登録はデータベースだけ。どのプロジェクトの名簿も変えない", () => {
     const s0 = fixture();
-    s0.db[3].active = false;
-    const s = addMembers(s0, ["B", "D"]);
-    expect(s.projects[1].members).toEqual(["A", "C", "B", "D"]);
-    expect(s.projects[1].selected).toEqual(["A", "C", "B"]);
+    const s = registerPlayer(s0, "E", 1450);
+    expect(s.db.at(-1)).toEqual(newPlayer("E", 1450));
+    expect(s.projects).toBe(s0.projects);
+  });
+
+  it("読み込みもデータベースだけ。名簿は変えない", () => {
+    const s0 = fixture();
+    const s = mergePlayerPatches(s0, parseDatabaseFile(bytes("名前\nE\nF\n")));
+    expect(s.db.map((p) => p.name)).toEqual(["A", "B", "C", "D", "E", "F"]);
+    expect(s.projects.map((p) => p.members)).toEqual(s0.projects.map((p) => p.members));
   });
 
   it("削除すると全プロジェクトの名簿からも消える", () => {

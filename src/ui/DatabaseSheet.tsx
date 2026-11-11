@@ -1,11 +1,10 @@
 import { useMemo, useRef, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
-import { newPlayer, type Player } from "../core/models";
+import type { Player } from "../core/models";
 import { databaseCsv, databaseJson, downloadText, parseDatabaseFile, shareText, todayStamp } from "../io";
-import { addMembers, deletePlayers, mergePlayerPatches, playedAnywhere, updateCurrent, updatePlayers } from "../store";
-import { CheckIcon, ChevronRight, SearchIcon } from "./icons";
+import { deletePlayers, mergePlayerPatches, playedAnywhere, registerPlayer, updatePlayers } from "../store";
+import { ChevronRight, SearchIcon } from "./icons";
 import { PlayerEditSheet, teamsOf, useTeamField } from "./PlayerEditSheet";
-import { toggleMember } from "./ProjectSheets";
 import { Sheet } from "./Sheet";
 
 type Sort = "added" | "name" | "team" | "rating";
@@ -26,10 +25,11 @@ function sortPlayers(ps: Player[], sort: Sort): Player[] {
 
 /**
  * 設定から開く。全プロジェクト共通のメンバーの登録・編集。休会中の人もここで扱う。
- * 「選ぶ」で何人かを選んで、名簿入り・所属・休会・削除をまとめて行える。ファイルでの書き出し・読み込みもここ。
+ * データベースはプロジェクトから独立させる。ここからプロジェクトの名簿には入れない（名簿はメンバータブで作る）。
+ * 「選ぶ」で何人かを選んで、所属・休会・削除をまとめて行える。ファイルでの書き出し・読み込みもここ。
  */
 export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
-  const { state, project, update, notify, onClose } = props;
+  const { state, update, notify, onClose } = props;
   const [newName, setNewName] = useState("");
   const [newRating, setNewRating] = useState("1500");
   const [query, setQuery] = useState("");
@@ -42,7 +42,6 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
   const [teamSheet, setTeamSheet] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const memberSet = new Set(project.members);
   const teams = useMemo(() => teamsOf(state.db), [state.db]);
   const q = query.trim();
   const shown = sortPlayers(
@@ -69,8 +68,8 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
       return;
     }
     const rating = Number(newRating);
-    // 登録した人は、そのまま開いているプロジェクトの名簿に入れる
-    update((s) => updateCurrent({ ...s, db: [...s.db, newPlayer(name, Number.isFinite(rating) ? rating : 1500)] }, (p) => ({ ...p, members: [...p.members, name], selected: [...p.selected, name] })));
+    update((s) => registerPlayer(s, name, Number.isFinite(rating) ? rating : 1500));
+    notify(`${name} をデータベースに登録しました。`);
     setNewName("");
     setNewRating("1500");
   };
@@ -86,12 +85,6 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
   const endSelect = () => {
     setSelecting(false);
     setPicked(new Set());
-  };
-
-  const bulkMembers = () => {
-    update((s) => addMembers(s, pickedNames));
-    notify(`${pickedNames.length} 人を「${project.name}」の名簿に入れました。`);
-    endSelect();
   };
 
   const bulkActive = () => {
@@ -150,7 +143,7 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
         <label class={"member" + (p.active ? "" : " off")} key={p.name} style="cursor:pointer">
           <span class="who">
             <span class="nm">{p.name}</span>
-            <span class="tm">{p.team ?? "所属なし"}{p.active ? "" : "・休会中"}{memberSet.has(p.name) ? "・名簿入り" : ""}</span>
+            <span class="tm">{p.team ?? "所属なし"}{p.active ? "" : "・休会中"}</span>
           </span>
           <span class="num"><b>{Math.round(p.rating)}</b></span>
           <span class="tick">
@@ -159,17 +152,13 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
         </label>
       );
     }
-    const on = memberSet.has(p.name);
     return (
-      <div class={"member" + (p.active ? "" : " off")} key={p.name}>
+      <div class={"member two" + (p.active ? "" : " off")} key={p.name}>
         <button class="who" onClick={() => setEditing(p)}>
           <span class="nm">{p.name}</span>
           <span class="tm">{p.team ?? "所属なし"}{p.active ? "" : "・休会中"}</span>
         </button>
         <span class="num"><b>{Math.round(p.rating)}</b></span>
-        <button class="btn act" style={"min-width:92px;padding:0 10px" + (on ? "" : ";color:var(--text-2);font-weight:500")} aria-pressed={on} onClick={() => toggleMember(props, p.name)} disabled={!p.active && !on}>
-          {on ? <><CheckIcon />名簿入り</> : "名簿へ"}
-        </button>
       </div>
     );
   };
@@ -248,7 +237,6 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
         <div class="bulk">
           <div class="muted">{pickedNames.length} 人を選択中</div>
           <div class="row">
-            <button class="btn grow" onClick={bulkMembers} disabled={pickedNames.length === 0}>名簿へ</button>
             <button class="btn grow" onClick={() => setTeamSheet(true)} disabled={pickedNames.length === 0}>所属</button>
             <button class="btn grow" onClick={bulkActive} disabled={pickedNames.length === 0}>{pickedAllInactive ? "休会を解除" : "休会"}</button>
             <button class="btn grow" style="color:var(--danger)" onClick={bulkDelete} disabled={pickedNames.length === 0}>削除</button>

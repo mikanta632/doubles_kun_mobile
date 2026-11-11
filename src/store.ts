@@ -307,14 +307,9 @@ export function updatePlayers(s: AppState, names: readonly string[], patch: Part
   return { ...s, db, projects };
 }
 
-/** いま開いているプロジェクトの名簿に入れる。試合に入れる人にも入れる（休会中の人は名簿だけ）。 */
-export function addMembers(s: AppState, names: readonly string[]): AppState {
-  const active = new Set(s.db.filter((p) => p.active).map((p) => p.name));
-  return updateCurrent(s, (p) => ({
-    ...p,
-    members: [...new Set([...p.members, ...names])],
-    selected: [...new Set([...p.selected, ...names.filter((n) => active.has(n))])],
-  }));
+/** データベースにだけ登録する。どのプロジェクトの名簿も変えない。 */
+export function registerPlayer(s: AppState, name: string, rating = 1500): AppState {
+  return { ...s, db: [...s.db, newPlayer(name, rating)] };
 }
 
 export interface ProjectRecord {
