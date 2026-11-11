@@ -107,6 +107,19 @@ export function SettingsView(props: ViewProps) {
       </section>
 
       <section class="section">
+        <div class="section-h"><h2>表示</h2><span class="note">全プロジェクト共通</span></div>
+        <div class="panel">
+          <label class="lrow">
+            <span class="body">
+              <span>レートを隠す</span>
+              <span class="sub">レートと勝率予想を画面に出さない。組み方や書き出しにはそのまま使う</span>
+            </span>
+            <input type="checkbox" checked={state.prefs.hide_ratings} onChange={(e) => update((s) => ({ ...s, prefs: { ...s.prefs, hide_ratings: (e.target as HTMLInputElement).checked } }))} />
+          </label>
+        </div>
+      </section>
+
+      <section class="section">
         <div class="section-h"><h2>データ</h2></div>
         <div class="panel">
           <button class="lrow" onClick={() => setOpen("db")}>
@@ -146,7 +159,7 @@ export function SettingsView(props: ViewProps) {
             <span class="count" style="color:inherit">{project.matches.length}</span>
           </button>
           <button class="lrow danger"
-            onClick={() => { if (confirm(`データベースの ${state.db.length} 人と ${state.projects.length} 件のプロジェクトを、すべて消します。よろしいですか？`)) { update(() => emptyState()); notify("すべて消しました。"); } }}>
+            onClick={() => { if (confirm(`データベースの ${state.db.length} 人と ${state.projects.length} 件のプロジェクトを、すべて消します。よろしいですか？`)) { update((s) => ({ ...emptyState(), prefs: s.prefs })); notify("すべて消しました。"); } }}>
             <span class="body">すべてのデータを削除</span>
           </button>
         </div>

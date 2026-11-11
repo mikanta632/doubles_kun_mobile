@@ -6,7 +6,7 @@ import { DEFAULT_CONFIG } from "../src/core/config";
 import { newMatch, newPlayer } from "../src/core/models";
 import { buildDashboard } from "../src/dashboard";
 import { bundleJson, parseImport } from "../src/io";
-import { emptyState, newProject, type AppState } from "../src/store";
+import { emptyState, newProject, removeProject, stateFromJson, type AppState } from "../src/store";
 
 function fixture(): AppState {
   const names = ["A", "B", "C", "D", "E"];
@@ -42,5 +42,19 @@ describe("集計の連続待ちの上限", () => {
     expect(buildDashboard(members, [], cfg, { attending: 9 }).people.meta.wait_cap).toBe(5);
     // 出席 0 人（まだ誰もチェックしていない）は名簿の人数で代用する
     expect(buildDashboard(members, [], cfg, { attending: 0 }).people.meta.wait_cap).toBe(7);
+  });
+});
+
+describe("表示の設定", () => {
+  it("prefs のない古い保存データは、レートを出す設定で読む", () => {
+    const s = fixture();
+    const { prefs: _, ...old } = s;
+    expect(stateFromJson(JSON.parse(JSON.stringify(old))).prefs).toEqual({ hide_ratings: false });
+  });
+
+  it("レートを隠す設定は保存して読み戻せ、最後のプロジェクトを消しても残る", () => {
+    const s = { ...fixture(), prefs: { hide_ratings: true } };
+    expect(stateFromJson(JSON.parse(JSON.stringify(s))).prefs.hide_ratings).toBe(true);
+    expect(removeProject(s, s.projects[0].id).prefs.hide_ratings).toBe(true);
   });
 });

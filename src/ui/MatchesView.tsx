@@ -119,10 +119,10 @@ export function MatchesView(props: ViewProps) {
       return { ...p, matches: p.matches.map((m) => (set.has(m.id) ? byId.get(rest.shift()!)! : m)) };
     });
 
-  // 試合の勝率予想（いまのレートで計算）
+  // 試合の勝率予想（いまのレートで計算）。レートを隠す設定なら出さない（勝率からレートの差が分かるので）
   const ratings = useMemo(() => new Map(state.db.map((p) => [p.name, p.rating])), [state.db]);
   const probOf = (m: Match): number | null => {
-    if (!project.settings.rating_match || m.team_a.length !== 2 || m.team_b.length !== 2) return null;
+    if (state.prefs.hide_ratings || !project.settings.rating_match || m.team_a.length !== 2 || m.team_b.length !== 2) return null;
     const r = [...m.team_a, ...m.team_b].map((n) => ratings.get(n));
     if (r.some((x) => x === undefined)) return null;
     const [a1, a2, b1, b2] = r as number[];
@@ -232,6 +232,7 @@ export function MatchesView(props: ViewProps) {
         <ProposalSheet
           proposal={proposal}
           project={project}
+          hideRatings={state.prefs.hide_ratings}
           eyebrow={`#${nextNo}・R${roundOf(nextNo)}・待機の最後に入る`}
           waitOf={new Map(resting.map((w) => [w.name, w.wait]))}
           onMove={(d) => setProposal({ ...proposal, index: (proposal.index + d + proposal.pairings.length) % proposal.pairings.length })}
@@ -269,9 +270,10 @@ function DoneRow({ m, no, round, onOpen }: { m: Match; no: number; round: number
   );
 }
 
-function ProposalSheet({ proposal, project, eyebrow, waitOf, onMove, onAdopt, onClose }: {
+function ProposalSheet({ proposal, project, hideRatings, eyebrow, waitOf, onMove, onAdopt, onClose }: {
   proposal: Proposal;
   project: Project;
+  hideRatings: boolean;
   eyebrow: string;
   /** 出番待ちの人（コートにいない人）の連続待ち */
   waitOf: Map<string, number>;
@@ -281,7 +283,7 @@ function ProposalSheet({ proposal, project, eyebrow, waitOf, onMove, onAdopt, on
 }) {
   const current = proposal.pairings[proposal.index];
   const notes = proposal.notes[proposal.index];
-  const showProb = project.settings.rating_match;
+  const showProb = project.settings.rating_match && !hideRatings;
   const prob = winProb(current, project);
   const pa = Math.round(prob * 100);
   // 出番待ちでいちばん長く休んでいる人のうち、この案に入る人

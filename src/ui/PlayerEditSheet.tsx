@@ -2,7 +2,7 @@ import type { JSX } from "preact";
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import type { Player } from "../core/models";
-import { deletePlayer, playedAnywhere, playedIn, playerHistory, renamePlayer } from "../store";
+import { deletePlayer, playedAnywhere, playerHistory, renamePlayer, type AppState, type Project } from "../store";
 import { whenWhere } from "./ProjectSheets";
 import { Sheet } from "./Sheet";
 import { Wheel, type WheelOption } from "./Wheel";
@@ -40,20 +40,45 @@ export function useTeamField(teams: readonly string[], initial: string | null): 
 }
 
 /**
- * データベース上のプレイヤーを編集する。名前の変更はすべてのプロジェクトの試合・名簿に反映する。
- * onRemove を渡すと、いま開いているプロジェクトの名簿から外すボタンを出す。
+ * これまでの記録（出たプロジェクトごとの試合数と勝敗）。データベースの編集画面とメンバータブの両方で出す。
  */
-export function PlayerEditSheet({ player, state, project, update, notify, onRemove, onClose }: ViewProps & { player: Player; onRemove?: (name: string) => void; onClose: () => void }) {
+export function HistorySection({ state, project, name }: { state: AppState; project: Project; name: string }) {
+  const history = useMemo(() => playerHistory(state, name), [state, name]);
+  if (history.length === 0) return null;
+  const total = history.reduce((a, r) => ({ played: a.played + r.played, wins: a.wins + r.wins, losses: a.losses + r.losses }), { played: 0, wins: 0, losses: 0 });
+  return (
+    <section class="section">
+      <div class="section-h">
+        <h2>これまでの記録</h2>
+        <span class="mono">{total.played} 試合 {total.wins} 勝 {total.losses} 敗</span>
+      </div>
+      <div class={"panel" + (history.length > 5 ? " scroll" : "")}>
+        {history.map((r) => (
+          <div class="lrow static" key={r.project.id}>
+            <span class="body">
+              <span style={r.project.id === project.id ? "font-weight:600" : ""}>{r.project.name}</span>
+              <span class="sub mono">{whenWhere(r.project)}{r.member ? "" : "｜名簿外"}</span>
+            </span>
+            <span class="count">{r.played ? `${r.played} 試合 ${r.wins}-${r.losses}${r.draws ? `-${r.draws}` : ""}` : "試合なし"}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * データベース上のプレイヤーを編集する（データベースの画面からだけ開く）。
+ * 名前の変更はすべてのプロジェクトの試合・名簿に反映する。レートを隠す設定のときはレートの欄を出さない。
+ */
+export function PlayerEditSheet({ player, state, project, update, notify, onClose }: ViewProps & { player: Player; onClose: () => void }) {
   const [name, setName] = useState(player.name);
   const [rating, setRating] = useState(String(player.initial_rating));
   const [active, setActive] = useState(player.active);
-  const isMember = project.members.includes(player.name);
-  const playedHere = playedIn(project, player.name);
+  const hide = state.prefs.hide_ratings;
 
   const teams = useMemo(() => teamsOf(state.db), [state.db]);
   const [team, teamField] = useTeamField(teams, player.team);
-  const history = useMemo(() => playerHistory(state, player.name), [state, player.name]);
-  const total = history.reduce((a, r) => ({ played: a.played + r.played, wins: a.wins + r.wins, losses: a.losses + r.losses }), { played: 0, wins: 0, losses: 0 });
 
   const save = () => {
     const newName = name.trim();
@@ -96,40 +121,19 @@ export function PlayerEditSheet({ player, state, project, update, notify, onRemo
           <span>名前</span>
           <input type="text" value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
         </label>
-        <label class="field" style="width:104px">
-          <span>レート</span>
-          <input type="number" inputMode="numeric" value={rating} onInput={(e) => setRating((e.target as HTMLInputElement).value)} />
-        </label>
+        {!hide && (
+          <label class="field" style="width:104px">
+            <span>レート</span>
+            <input type="number" inputMode="numeric" value={rating} onInput={(e) => setRating((e.target as HTMLInputElement).value)} />
+          </label>
+        )}
       </div>
       {teamField}
       <label class="check">
         <input type="checkbox" checked={!active} onChange={(e) => setActive(!(e.target as HTMLInputElement).checked)} />
         休会中（どのプロジェクトでも試合に入れない）
       </label>
-      {onRemove && isMember && (
-        <button class="btn block" onClick={() => { onRemove(player.name); if (!playedHere) onClose(); }} disabled={playedHere}>
-          {playedHere ? "試合に出ているので名簿から外せません" : "このプロジェクトの名簿から外す"}
-        </button>
-      )}
-      {history.length > 0 && (
-        <section class="section">
-          <div class="section-h">
-            <h2>これまでの記録</h2>
-            <span class="mono">{total.played} 試合 {total.wins} 勝 {total.losses} 敗</span>
-          </div>
-          <div class={"panel" + (history.length > 5 ? " scroll" : "")}>
-            {history.map((r) => (
-              <div class="lrow static" key={r.project.id}>
-                <span class="body">
-                  <span style={r.project.id === project.id ? "font-weight:600" : ""}>{r.project.name}</span>
-                  <span class="sub mono">{whenWhere(r.project)}{r.member ? "" : "｜名簿外"}</span>
-                </span>
-                <span class="count">{r.played ? `${r.played} 試合 ${r.wins}-${r.losses}${r.draws ? `-${r.draws}` : ""}` : "試合なし"}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <HistorySection state={state} project={project} name={player.name} />
       <div class="actions">
         <button class="btn danger tall" onClick={remove}>削除</button>
         <span class="grow" />

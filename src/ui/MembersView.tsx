@@ -4,14 +4,15 @@ import { countPlays } from "../core/dayEngine";
 import type { Player } from "../core/models";
 import { memberPlayers } from "../store";
 import { PlusIcon, SearchIcon } from "./icons";
-import { PlayerEditSheet } from "./PlayerEditSheet";
-import { RosterPickSheet, toggleMember } from "./ProjectSheets";
+import { MemberSheet } from "./MemberSheet";
+import { RosterPickSheet } from "./ProjectSheets";
 
 type Filter = "all" | "in" | "out";
 
 /**
  * メンバータブ。プロジェクトの名簿と、今日の参加（試合に入れる人）を一つの一覧で扱う。
- * 右のチェックが参加、名前をタップすると編集。名簿への追加は右上の「追加」から。
+ * 右のチェックが参加、名前をタップすると記録と「名簿から外す」。名簿への追加は右上の「追加」から。
+ * データベースの人（名前・所属・レート・休会）はここでは変えない。
  */
 export function MembersView(props: ViewProps) {
   const { state, project, updateProject } = props;
@@ -78,7 +79,7 @@ export function MembersView(props: ViewProps) {
                   <span class="tm">{p.team ?? "所属なし"}{p.active ? "" : "・休会中"}</span>
                 </button>
                 <span class="num">
-                  <b>{Math.round(p.rating)}</b>
+                  {!state.prefs.hide_ratings && <b>{Math.round(p.rating)}</b>}
                   <span>出場 {plays.get(p.name) ?? 0}</span>
                 </span>
                 <label class="tick">
@@ -88,11 +89,11 @@ export function MembersView(props: ViewProps) {
             ))}
             {shown.length === 0 && <div class="empty">該当する人はいません</div>}
           </div>
-          <div class="foot">名前をタップすると、レート・所属の変更や名簿から外す操作ができます。</div>
+          <div class="foot">名前をタップすると、これまでの記録を見たり名簿から外したりできます。</div>
         </>
       )}
 
-      {editing && <PlayerEditSheet {...props} player={editing} onRemove={(name) => toggleMember(props, name)} onClose={() => setEditing(null)} />}
+      {editing && <MemberSheet {...props} player={editing} onClose={() => setEditing(null)} />}
       {adding && <RosterPickSheet {...props} onClose={() => setAdding(false)} />}
     </>
   );

@@ -248,7 +248,7 @@ export function RosterPickSheet({ state, project, update, notify, onClose }: Vie
                   <span style="font-weight:600">{p.name}</span>
                   <span class="sub">{p.team ?? "所属なし"}</span>
                 </span>
-                <span class="mono" style="font-size:13px;color:var(--muted)">{Math.round(p.rating)}</span>
+                {!state.prefs.hide_ratings && <span class="mono" style="font-size:13px;color:var(--muted)">{Math.round(p.rating)}</span>}
                 <input type="checkbox" checked={picked.has(p.name)} onChange={() => toggle(p.name)} />
               </label>
             ))}

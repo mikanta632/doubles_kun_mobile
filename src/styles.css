@@ -24,6 +24,9 @@
   --sans: "IBM Plex Sans JP", system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --nav-h: 60px;
+  /* 画面の上下端の余裕。iPhone は端がぼやけて見える（ステータスバーやツールバーの下）ので少し離す */
+  --edge-top: calc(env(safe-area-inset-top) + 20px);
+  --edge-bottom: calc(env(safe-area-inset-bottom) + 10px);
 }
 
 * { box-sizing: border-box; }
@@ -42,7 +45,7 @@ a { color: var(--ink); }
 #app { min-height: 100dvh; display: flex; flex-direction: column; }
 .screen {
   flex: 1;
-  padding: 14px 16px calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px);
+  padding: var(--edge-top) 16px calc(var(--nav-h) + var(--edge-bottom) + 24px);
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
@@ -109,7 +112,8 @@ input[type="text"], input[type="number"], input[type="date"], input[type="search
   min-height: 44px;
   background: var(--card);
   width: 100%;
-  font-size: 15px;
+  /* 16px 未満だと、iPhone は入力のたびに画面を拡大する */
+  font-size: 16px;
 }
 input[type="number"] { text-align: right; font-family: var(--mono); }
 input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); flex: none; }
@@ -297,7 +301,7 @@ td.hot { background: #fbe9e7; color: var(--danger); font-weight: 600; }
 .sheet {
   background: var(--card); width: 100%; max-width: 720px;
   border-radius: 14px 14px 0 0;
-  padding: 8px 20px calc(20px + env(safe-area-inset-bottom));
+  padding: 8px 20px calc(20px + var(--edge-bottom));
   max-height: 92dvh; overflow: auto;
   display: flex; flex-direction: column; gap: 16px;
 }
@@ -310,7 +314,7 @@ td.hot { background: #fbe9e7; color: var(--danger); font-weight: 600; }
 .sheet .actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
 .sheet .scroll { max-height: 45dvh; overflow: auto; }
 /* まとめて操作のボタン。リストが長くても下に貼り付いて見える */
-.sheet .bulk { position: sticky; bottom: calc(-20px - env(safe-area-inset-bottom)); margin: 0 -20px calc(-20px - env(safe-area-inset-bottom)); padding: 10px 20px calc(12px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.sheet .bulk { position: sticky; bottom: calc(-20px - var(--edge-bottom)); margin: 0 -20px calc(-20px - var(--edge-bottom)); padding: 10px 20px calc(12px + var(--edge-bottom)); background: var(--card); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
 
 /* ドラムロール */
 .wheel-wrap { position: relative; overflow: hidden; }
@@ -349,7 +353,7 @@ td.hot { background: #fbe9e7; color: var(--danger); font-weight: 600; }
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   background: var(--card);
   border-top: 1px solid var(--line);
-  padding: 0 8px env(safe-area-inset-bottom);
+  padding: 0 8px var(--edge-bottom);
 }
 .nav button {
   height: var(--nav-h);
@@ -362,4 +366,4 @@ td.hot { background: #fbe9e7; color: var(--danger); font-weight: 600; }
 .nav button.on svg { stroke-width: 1.9; }
 
 .banner { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px 6px 6px 12px; font-size: 13px; }
-.toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 30; max-width: 90vw; }
+.toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + var(--edge-bottom) + 16px); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 30; max-width: 90vw; }

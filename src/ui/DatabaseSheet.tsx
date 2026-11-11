@@ -43,6 +43,10 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const teams = useMemo(() => teamsOf(state.db), [state.db]);
+  // レートを隠す設定なら、レートの数字・登録欄・レート順の並べ替えを出さない（並び順でレートが分かるので）
+  const hide = state.prefs.hide_ratings;
+  const sorts = hide ? SORTS.filter(([k]) => k !== "rating") : SORTS;
+  const sortBy: Sort = hide && sort === "rating" ? "added" : sort;
   const q = query.trim();
   const shown = sortPlayers(
     state.db.filter(
@@ -50,7 +54,7 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
         (!q || p.name.includes(q) || (p.team ?? "").includes(q)) &&
         (teamFilter === "" || (teamFilter === NO_TEAM ? !p.team : p.team === teamFilter)),
     ),
-    sort,
+    sortBy,
   );
   const active = shown.filter((p) => p.active);
   const inactive = shown.filter((p) => !p.active);
@@ -145,7 +149,7 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
             <span class="nm">{p.name}</span>
             <span class="tm">{p.team ?? "所属なし"}{p.active ? "" : "・休会中"}</span>
           </span>
-          <span class="num"><b>{Math.round(p.rating)}</b></span>
+          {hide ? <span /> : <span class="num"><b>{Math.round(p.rating)}</b></span>}
           <span class="tick">
             <input type="checkbox" checked={picked.has(p.name)} onChange={() => togglePick(p.name)} aria-label={`${p.name}を選ぶ`} />
           </span>
@@ -158,7 +162,7 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
           <span class="nm">{p.name}</span>
           <span class="tm">{p.team ?? "所属なし"}{p.active ? "" : "・休会中"}</span>
         </button>
-        <span class="num"><b>{Math.round(p.rating)}</b></span>
+        {!hide && <span class="num"><b>{Math.round(p.rating)}</b></span>}
       </div>
     );
   };
@@ -171,7 +175,7 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
       {!selecting && (
         <div class="row">
           <input class="grow" type="text" placeholder="名前" aria-label="名前" value={newName} onInput={(e) => setNewName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && addPlayer()} />
-          <input type="number" style="width:88px" inputMode="numeric" aria-label="レート" value={newRating} onInput={(e) => setNewRating((e.target as HTMLInputElement).value)} />
+          {!hide && <input type="number" style="width:88px" inputMode="numeric" aria-label="レート" value={newRating} onInput={(e) => setNewRating((e.target as HTMLInputElement).value)} />}
           <button class="btn primary" onClick={addPlayer} disabled={!newName.trim()}>登録</button>
         </div>
       )}
@@ -197,8 +201,8 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
             </div>
           )}
           <div class="seg" role="radiogroup" aria-label="並べ方" style="display:grid">
-            {SORTS.map(([k, l]) => (
-              <button key={k} role="radio" aria-checked={sort === k} class={sort === k ? "on" : ""} onClick={() => setSort(k)}>{l}</button>
+            {sorts.map(([k, l]) => (
+              <button key={k} role="radio" aria-checked={sortBy === k} class={sortBy === k ? "on" : ""} onClick={() => setSort(k)}>{l}</button>
             ))}
           </div>
           <div class="row between">

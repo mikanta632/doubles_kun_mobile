@@ -41,7 +41,16 @@ export interface AppState {
   projects: Project[];
   /** いま開いているプロジェクトの id */
   current: string;
+  /** 見た目の設定（全プロジェクト共通） */
+  prefs: Prefs;
 }
+
+export interface Prefs {
+  /** レートと勝率予想を画面に出さない（組み方や書き出しには使う。見えないだけ） */
+  hide_ratings: boolean;
+}
+
+export const DEFAULT_PREFS: Prefs = { hide_ratings: false };
 
 const KEY = "doubles_kun_mobile.v2";
 const KEY_V1 = "doubles_kun_mobile.v1";
@@ -77,7 +86,7 @@ export function todayIso(): string {
 
 export function emptyState(): AppState {
   const p = newProject("ダブルスくん");
-  return { db: [], projects: [p], current: p.id };
+  return { db: [], projects: [p], current: p.id, prefs: { ...DEFAULT_PREFS } };
 }
 
 export function loadState(): AppState {
@@ -117,7 +126,7 @@ export function saveState(s: AppState): void {
 /** 旧版の状態（players / matches / selected が 1 組）を、データベース + プロジェクト 1 つに直す。 */
 export function migrateV1(d: Record<string, unknown>): AppState {
   const { players, project } = projectFromJson(d);
-  return { db: players, projects: [project], current: project.id };
+  return { db: players, projects: [project], current: project.id, prefs: { ...DEFAULT_PREFS } };
 }
 
 export function stateFromJson(d: Record<string, unknown>): AppState {
@@ -128,7 +137,9 @@ export function stateFromJson(d: Record<string, unknown>): AppState {
     : [];
   if (projects.length === 0) projects.push(newProject("ダブルスくん"));
   const current = typeof d.current === "string" && projects.some((p) => p.id === d.current) ? d.current : projects[0].id;
-  return { db, projects, current };
+  const prefsRaw = (d.prefs ?? {}) as Record<string, unknown>;
+  const prefs: Prefs = { hide_ratings: Boolean(prefsRaw.hide_ratings) };
+  return { db, projects, current, prefs };
 }
 
 /**
@@ -203,7 +214,7 @@ export function addProject(s: AppState, project: Project, open = true): AppState
 
 export function removeProject(s: AppState, id: string): AppState {
   const projects = s.projects.filter((p) => p.id !== id);
-  if (projects.length === 0) return { ...emptyState(), db: s.db };
+  if (projects.length === 0) return { ...emptyState(), db: s.db, prefs: s.prefs };
   return { ...s, projects, current: s.current === id ? projects[0].id : s.current };
 }
 
