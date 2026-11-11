@@ -2,7 +2,7 @@ import type { JSX } from "preact";
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import type { Player } from "../core/models";
-import { deletePlayer, playedAnywhere, playerHistory, renamePlayer, type AppState, type Project } from "../store";
+import { deletePlayer, dropFromUndo, playedAnywhere, playerHistory, renamePlayer, type AppState, type Project } from "../store";
 import { whenWhere } from "./ProjectSheets";
 import { Sheet } from "./Sheet";
 import { Wheel, type WheelOption } from "./Wheel";
@@ -73,7 +73,7 @@ export function HistorySection({ state, project, name }: { state: AppState; proj
  */
 export function PlayerEditSheet({ player, state, project, update, notify, onClose }: ViewProps & { player: Player; onClose: () => void }) {
   const [name, setName] = useState(player.name);
-  const [rating, setRating] = useState(String(player.initial_rating));
+  const [rating, setRating] = useState(String(player.rating));
   const [active, setActive] = useState(player.active);
   const hide = state.prefs.hide_ratings;
 
@@ -92,16 +92,15 @@ export function PlayerEditSheet({ player, state, project, update, notify, onClos
       const s = renamePlayer(s0, player.name, newName);
       const db = s.db.map((p) => {
         if (p.name !== newName) return p;
-        // 初期レートを変えたときだけ rating も合わせる（自動更新 ON なら直後に再計算される）。
-        // 所属や休会の変更だけで、凍結している rating や読み込んだ rating を初期値に戻さない
-        const changed = Number.isFinite(r) && r !== p.initial_rating;
-        return { ...p, initial_rating: changed ? r : p.initial_rating, rating: changed ? r : p.rating, team: team || null, active };
+        // レートは 1 つ（固定値）。変えたら rating と initial_rating の両方を合わせる
+        const changed = Number.isFinite(r) && r !== p.rating;
+        return { ...p, initial_rating: changed ? r : p.rating, rating: changed ? r : p.rating, team: team || null, active };
       });
       // 休会中にした人は、どのプロジェクトでも試合の候補から外す
       const projects = active ? s.projects : s.projects.map((p) => ({ ...p, selected: p.selected.filter((n) => n !== newName) }));
-      // レートを変えたら、計算し直しの控えは捨てる（あとで元に戻すとこの変更が消える）
-      const rateChanged = Number.isFinite(r) && r !== player.initial_rating;
-      return { ...s, db, projects, rating_undo: rateChanged ? null : s.rating_undo };
+      // レートを変えたら、この人を元に戻すの控えから外す（あとで元に戻すとこの変更が消える）
+      const rateChanged = Number.isFinite(r) && r !== player.rating;
+      return { ...s, db, projects, rating_undo: rateChanged ? dropFromUndo(s.rating_undo, [newName]) : s.rating_undo };
     });
     onClose();
   };

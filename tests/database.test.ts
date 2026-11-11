@@ -8,7 +8,7 @@ import { deletePlayers, emptyState, mergePlayerPatches, newProject, playerHistor
 
 function fixture(): AppState {
   const db = [newPlayer("A", 1600, "総務"), newPlayer("B", 1500, "研究"), newPlayer("C"), newPlayer("D")];
-  db[1].rating = 1523.456;
+  db[1].rating = db[1].initial_rating = 1523.456;
   const p1 = newProject("春", {
     date: "2026-04-01",
     members: ["A", "B", "C", "D"],
@@ -30,10 +30,11 @@ describe("CSV", () => {
     const s = fixture();
     s.db[3].active = false;
     const csv = databaseCsv(s);
-    expect(csv.startsWith("﻿名前,所属,レート,初期レート,休会\r\n")).toBe(true);
+    expect(csv.startsWith("﻿名前,所属,レート,休会\r\n")).toBe(true);
     const patches = parseDatabaseFile(bytes(csv));
     const back = mergePlayerPatches({ ...s, db: [] }, patches).db;
-    expect(back.map((p) => [p.name, p.team, p.initial_rating, p.active])).toEqual(s.db.map((p) => [p.name, p.team, p.initial_rating, p.active]));
+    expect(back.map((p) => [p.name, p.team, Math.round(p.rating), p.active])).toEqual(s.db.map((p) => [p.name, p.team, Math.round(p.rating), p.active]));
+    expect(back.every((p) => p.initial_rating === p.rating)).toBe(true);
     expect(back[1].rating).toBe(1523.46);
   });
 

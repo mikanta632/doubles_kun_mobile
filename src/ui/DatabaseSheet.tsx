@@ -267,7 +267,7 @@ export function DatabaseSheet(props: ViewProps & { onClose: () => void }) {
             <button class="lrow" onClick={() => fileRef.current?.click()}>
               <span class="body">
                 <span>読み込んで足す</span>
-                <span class="sub">CSV（名前・所属・レート・初期レート・休会の列）か JSON。同じ名前の人は上書き</span>
+                <span class="sub">CSV（名前・所属・レート・休会の列）か JSON。同じ名前の人は上書き</span>
               </span>
               <span class="chev"><ChevronRight /></span>
             </button>

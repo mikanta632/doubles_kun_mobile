@@ -2,34 +2,31 @@ import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import type { Match } from "../core/models";
 import { estimatePairModel, estimateSummary, isConclusive } from "../core/pairModelEstimator";
-import { autoRating, projectsInPlayOrder, recalcGlobal, undoRatings, updateCurrent, withRatingUndo } from "../store";
+import { MERGE_LABEL, projectsInPlayOrder, undoRatings, updateCurrent, withRatingUndo } from "../store";
 import { ChevronRight } from "./icons";
 import { whenWhere } from "./ProjectSheets";
 import { Sheet } from "./Sheet";
 
 /**
- * 設定 → データから開く。全プロジェクトの試合の一覧と、それを使う計算（レートの計算し直し・p の推定）。
- * 計算の前のレート（と p）は控えておき、「元に戻す」で戻せる。
+ * 設定 → データから開く。全プロジェクトの試合の一覧と、それを使う計算（p の推定）。
+ * レートは固定値で、試合結果では動かさない（直すときはデータベースで手で直す）。
+ * p を推定する前の値（とレートをまとめる前の初期レート）は控えておき、「元に戻す」で戻せる。
  */
 export function MatchListSheet({ state, project, update, notify, onClose }: ViewProps & { onClose: () => void }) {
-  // 一覧は開催日の新しい順。レートの計算はこの逆順（古い順）で流す
+  // 一覧は開催日の新しい順
   const ordered = useMemo(() => projectsInPlayOrder(state).reverse(), [state]);
   const total = state.projects.reduce((a, p) => a + p.matches.length, 0);
   const [open, setOpen] = useState<Set<string>>(() => new Set([project.id]));
   const [estimate, setEstimate] = useState<string | null>(null);
-  const auto = autoRating(state);
   const undo = state.rating_undo;
-
-  const recalc = () => {
-    if (!confirm("初期レートから、全プロジェクトの試合を開催日の古い順に当てて、レートを計算し直します。よろしいですか？（あとで元に戻せます）")) return;
-    update((s) => withRatingUndo(s, "レートの計算し直し", recalcGlobal));
-    notify("全プロジェクトの試合からレートを計算し直しました。");
-  };
+  // レートを 1 つにまとめたときの控えは「初期レートの方にそろえ直す」と言う方が分かりやすい
+  const merged = undo?.label === MERGE_LABEL;
+  const undoText = merged ? `${Object.keys(undo!.ratings).length} 人のレートを、詳細に出ていた初期レートの方にそろえ直す` : `${undo?.label}の前に戻す`;
 
   const runEstimate = () => {
     // 全プロジェクトの試合から推定する（G はこのプロジェクトの値に固定して p だけ）
     const all = projectsInPlayOrder(state).flatMap((p) => p.matches);
-    const ratings = new Map(state.db.map((p) => [p.name, p.initial_rating]));
+    const ratings = new Map(state.db.map((p) => [p.name, p.rating]));
     const e = estimatePairModel(all, ratings, project.config.game_scale);
     if (!e) {
       notify("推定に使える試合がありません。ゲーム数の入った結果が必要です。");
@@ -43,8 +40,9 @@ export function MatchListSheet({ state, project, update, notify, onClose }: View
 
   const restore = () => {
     if (!undo) return;
+    if (merged && !confirm(`${undoText}。よろしいですか？`)) return;
     update(undoRatings);
-    notify(`${undo.label}の前に戻しました。`);
+    notify(merged ? "初期レートの方にそろえ直しました。" : `${undo.label}の前に戻しました。`);
   };
 
   const toggle = (id: string) =>
@@ -60,13 +58,6 @@ export function MatchListSheet({ state, project, update, notify, onClose }: View
       <section class="section">
         <div class="section-h"><h2>計算</h2></div>
         <div class="panel">
-          <button class="lrow" onClick={recalc} disabled={total === 0}>
-            <span class="body">
-              <span>レートを計算し直す</span>
-              <span class="sub">初期レートから、全プロジェクトの試合を開催日の古い順に当てます。K・p はそれぞれのプロジェクトの設定</span>
-            </span>
-            <span class="chev"><ChevronRight /></span>
-          </button>
           <button class="lrow" onClick={runEstimate} disabled={total === 0}>
             <span class="body">
               <span>試合結果から p を推定</span>
@@ -74,18 +65,18 @@ export function MatchListSheet({ state, project, update, notify, onClose }: View
             </span>
             <span class="chev"><ChevronRight /></span>
           </button>
-          {undo && !auto && (
+          {undo && (
             <button class="lrow" onClick={restore}>
               <span class="body">
                 <span>元に戻す</span>
-                <span class="sub">{undo.label}の前に戻す（{fmtTime(undo.at)}）</span>
+                <span class="sub">{undoText}（{fmtTime(undo.at)}）</span>
               </span>
               <span class="chev"><ChevronRight /></span>
             </button>
           )}
         </div>
         {estimate && <div class="plan-summary">{estimate}</div>}
-        {auto && <div class="foot">「{project.name}」は「試合結果でレートを自動更新」が ON なので、操作のたびに全試合で計算し直します（元に戻すは出しません）。</div>}
+        <div class="foot">レートは試合結果では変わりません。直すときは「メンバーのデータベース」で手で直します。</div>
       </section>
 
       <section class="section">

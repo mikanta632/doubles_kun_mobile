@@ -92,14 +92,10 @@ export function SettingsView(props: ViewProps) {
             <span class="body">同じ所属の人をなるべくペアにしない</span>
             <input type="checkbox" checked={project.settings.avoid_same_team} onChange={(e) => updateProject((p) => ({ ...p, settings: { ...p.settings, avoid_same_team: (e.target as HTMLInputElement).checked } }))} />
           </label>
-          <label class="lrow">
-            <span class="body">試合結果でレートを自動更新</span>
-            <input type="checkbox" checked={cfg.elo_auto_update} onChange={(e) => setCfg({ elo_auto_update: (e.target as HTMLInputElement).checked })} />
-          </label>
           <button class="lrow" onClick={() => setOpen("advanced")}>
             <span class="body">
               <span>詳細設定</span>
-              <span class="sub">接戦の基準・待ちの上限・Elo の係数など 10 項目</span>
+              <span class="sub">接戦の基準・待ちの上限・同席の上限など 9 項目</span>
             </span>
             <span class="chev"><ChevronRight /></span>
           </button>
@@ -133,7 +129,7 @@ export function SettingsView(props: ViewProps) {
           <button class="lrow" onClick={() => setOpen("matches")}>
             <span class="body">
               <span>試合の一覧</span>
-              <span class="sub">全プロジェクトの試合。レートの計算し直し・p の推定・元に戻す</span>
+              <span class="sub">全プロジェクトの試合。p の推定・元に戻す</span>
             </span>
             <span class="count">{state.projects.reduce((a, p) => a + p.matches.length, 0)}</span>
             <span class="chev"><ChevronRight /></span>
@@ -217,7 +213,7 @@ function ExportSheet({ state, project, onClose }: ViewProps & { onClose: () => v
   );
 }
 
-/** 詳細設定。レートの計算し直しと p の推定は「データ → 試合の一覧」で行う（全プロジェクトの試合を使うので） */
+/** 詳細設定。p の推定は「データ → 試合の一覧」で行う（全プロジェクトの試合を使うので）。レートは固定値なので K は出さない */
 function AdvancedSheet({ project, setCfg, onClose }: ViewProps & { setCfg: (patch: Partial<EngineConfig>) => void; onClose: () => void }) {
   const cfg = project.config;
   const band = Math.round(cfg.day_win_prob_min * 100);
@@ -234,10 +230,9 @@ function AdvancedSheet({ project, setCfg, onClose }: ViewProps & { setCfg: (patc
         <NumberField label="同じ所属のペア 1 組あたりの減点（0 = 気にしない）" value={cfg.day_same_team_weight} min={0} max={20} step={0.5} onChange={(v) => setCfg({ day_same_team_weight: v })} />
         <NumberField label="1 ゲームのレートスケール" value={cfg.game_scale} min={100} max={3000} step={50} onChange={(v) => setCfg({ game_scale: v })} />
         <NumberField label="ペア強度の弱い側の重み p（0.5 は単純平均）" value={cfg.pair_weak_weight} min={0.2} max={0.8} step={0.01} onChange={(v) => setCfg({ pair_weak_weight: v })} />
-        <NumberField label="Elo の K 係数" value={cfg.elo_k_factor} min={1} max={100} onChange={(v) => setCfg({ elo_k_factor: v })} />
       </div>
       <div class="row wrap">
-        <button class="btn" onClick={() => { if (confirm("詳細設定を既定値に戻しますか？")) setCfg({ ...DEFAULT_CONFIG, courts: cfg.courts, elo_auto_update: cfg.elo_auto_update }); }}>既定値に戻す</button>
+        <button class="btn" onClick={() => { if (confirm("詳細設定を既定値に戻しますか？")) setCfg({ ...DEFAULT_CONFIG, courts: cfg.courts }); }}>既定値に戻す</button>
       </div>
     </Sheet>
   );

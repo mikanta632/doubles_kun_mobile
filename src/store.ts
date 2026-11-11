@@ -10,11 +10,13 @@
  * 集計は名簿の人だけを対象にする。
  *
  * プロジェクトは複数持てる。試合・設定・名簿はプロジェクトごと、データベースは共通。
+ *
+ * レートは 1 人 1 つの固定値（試合結果では動かさない。直すときはデータベースで手で直す）。
+ * Player の rating と initial_rating はいつも同じ値にしておく（デスクトップ版のファイル形式との互換のため 2 つ残している）。
  * デスクトップ版と同じ players.json / matches.json の形で書き出し・読み込みができる（io.ts）。
  */
 
 import { DEFAULT_CONFIG, DEFAULT_MATCH_SETTINGS, configFromJson, type EngineConfig, type MatchSettings } from "./core/config";
-import { applyMatches } from "./core/elo";
 import { matchFromJson, newPlayer, playerFromJson, type Match, type Player } from "./core/models";
 
 export interface Project {
@@ -67,11 +69,19 @@ export interface AppState {
   prefs: Prefs;
   /** 直前のレートの計算し直しを取り消すための控え（なければ null） */
   rating_undo: RatingSnapshot | null;
-  /** 保存形式の版。2 で K の既定値を 48 → 20 に移した */
+  /** 保存形式の版。2 で K の既定値を 48 → 20 に移した。3 でレートを 1 つにまとめた */
   schema: number;
 }
 
-export const SCHEMA = 2;
+export const SCHEMA = 3;
+
+/** レートを 1 つにまとめたときの控えの名前 */
+export const MERGE_LABEL = "レートを一つにまとめる";
+
+/** レートを 1 つにする（initial_rating を rating に合わせる） */
+export function fixRating(p: Player): Player {
+  return p.initial_rating === p.rating ? p : { ...p, initial_rating: p.rating };
+}
 
 export interface Prefs {
   /** レートと勝率予想を画面に出さない（組み方や書き出しには使う。見えないだけ） */
@@ -161,11 +171,15 @@ export function saveState(s: AppState): void {
 /** 旧版の状態（players / matches / selected が 1 組）を、データベース + プロジェクト 1 つに直す。 */
 export function migrateV1(d: Record<string, unknown>): AppState {
   const { players, project } = projectFromJson(d);
-  return { db: players, projects: migrateK([project]), current: project.id, prefs: { ...DEFAULT_PREFS }, rating_undo: null, schema: SCHEMA };
+  return { db: players.map(fixRating), projects: migrateK([project]), current: project.id, prefs: { ...DEFAULT_PREFS }, rating_undo: null, schema: SCHEMA };
 }
 
 export function stateFromJson(d: Record<string, unknown>): AppState {
-  const db = dedupe(playersFromJson(d.db));
+  const raw = dedupe(playersFromJson(d.db));
+  // レートを 1 つにまとめる（v0.10.0）。一覧に出て組み合わせに使っていた rating を残し、
+  // 違っていた初期レートは控えに入れる（試合の一覧の「元に戻す」で、初期レートの方に戻せる）
+  const differing = raw.filter((p) => p.initial_rating !== p.rating);
+  const db = raw.map(fixRating);
   const names = new Set(db.map((p) => p.name));
   const projects = Array.isArray(d.projects)
     ? (d.projects as Record<string, unknown>[]).map((p) => projectFromJson(p, names).project)
@@ -175,12 +189,16 @@ export function stateFromJson(d: Record<string, unknown>): AppState {
   const prefsRaw = (d.prefs ?? {}) as Record<string, unknown>;
   const prefs: Prefs = { hide_ratings: Boolean(prefsRaw.hide_ratings) };
   const schema = typeof d.schema === "number" ? d.schema : 1;
+  const merged: RatingSnapshot | null =
+    schema < 3 && differing.length > 0
+      ? { at: new Date().toISOString(), label: MERGE_LABEL, ratings: Object.fromEntries(differing.map((p) => [p.name, p.initial_rating])) }
+      : null;
   return {
     db,
     projects: schema < 2 ? migrateK(projects) : projects,
     current,
     prefs,
-    rating_undo: snapshotFromJson(d.rating_undo),
+    rating_undo: merged ?? snapshotFromJson(d.rating_undo),
     schema: SCHEMA,
   };
 }
@@ -232,7 +250,8 @@ export function projectFromJson(d: Record<string, unknown>, known?: Set<string>)
     created_at: typeof d.created_at === "string" ? d.created_at : undefined,
     updated_at: typeof d.updated_at === "string" ? d.updated_at : undefined,
     matches,
-    config: configFromJson((d.config ?? d.engine_config) as Record<string, unknown> | undefined),
+    // レートは試合結果で動かさない（自動更新は使わない）
+    config: { ...configFromJson((d.config ?? d.engine_config) as Record<string, unknown> | undefined), elo_auto_update: false },
     settings: {
       rating_match: settingsRaw?.rating_match === undefined ? true : Boolean(settingsRaw.rating_match),
       avoid_same_team: Boolean(settingsRaw?.avoid_same_team),
@@ -381,9 +400,9 @@ export function deletePlayers(s: AppState, names: readonly string[]): AppState {
 /** データベースに players を足す（同じ名前は上書き）。 */
 export function mergePlayers(s: AppState, players: readonly Player[]): AppState {
   const byName = new Map(s.db.map((p) => [p.name, p]));
-  for (const p of players) byName.set(p.name, { ...(byName.get(p.name) ?? p), ...p });
-  // レートが変わるので、計算し直しの控えは捨てる（あとで元に戻すと読み込んだ分が消える）
-  return { ...s, db: [...byName.values()], rating_undo: null };
+  for (const p of players) byName.set(p.name, fixRating({ ...(byName.get(p.name) ?? p), ...p }));
+  // レートを上書きした人は控えから外す（あとで元に戻すと読み込んだ分が消える）
+  return { ...s, db: [...byName.values()], rating_undo: dropFromUndo(s.rating_undo, players.map((p) => p.name)) };
 }
 
 /** 読み込んだ 1 人分。ファイルに無かった項目は undefined（登録済みの人の値を残す）。 */
@@ -391,23 +410,25 @@ export type PlayerPatch = { name: string } & Partial<Omit<Player, "name">>;
 
 /**
  * データベースに patches を足す。同じ名前の人は、ファイルにあった項目だけ上書きする。
- * レートだけあって初期レートがないときは、初期レートも同じ値にする（編集画面でレートを変えたときと同じ）。
+ * レートは 1 つ。「レート」の列がなく「初期レート」だけあればそれを使う。
  * 休会になった人は、どのプロジェクトでも試合の候補から外す。
  */
 export function mergePlayerPatches(s: AppState, patches: readonly PlayerPatch[]): AppState {
   const byName = new Map(s.db.map((p) => [p.name, p]));
   for (const x of patches) {
     const base = byName.get(x.name) ?? newPlayer(x.name);
+    const rating = x.rating ?? x.initial_rating ?? base.rating;
     byName.set(x.name, {
       name: x.name,
-      rating: x.rating ?? base.rating,
-      initial_rating: x.initial_rating ?? x.rating ?? base.initial_rating,
+      rating,
+      initial_rating: rating,
       team: x.team !== undefined ? x.team : base.team,
       active: x.active ?? base.active,
     });
   }
   const projects = s.projects.map((p) => ({ ...p, selected: p.selected.filter((n) => byName.get(n)?.active !== false) }));
-  return { ...s, db: [...byName.values()], projects, rating_undo: null };
+  const rated = patches.filter((x) => x.rating !== undefined || x.initial_rating !== undefined).map((x) => x.name);
+  return { ...s, db: [...byName.values()], projects, rating_undo: dropFromUndo(s.rating_undo, rated) };
 }
 
 /** 何人かの所属・休会をまとめて変える。休会にした人は、どのプロジェクトでも試合の候補から外す。 */
@@ -455,35 +476,9 @@ export function playerHistory(s: AppState, name: string): ProjectRecord[] {
   return out.sort((a, b) => (b.project.date || "").localeCompare(a.project.date || "") || b.project.updated_at.localeCompare(a.project.updated_at));
 }
 
-/** レートの計算で試合を流す順：開催日の古い順（日付未定は最後）、同じ日なら作った順。プロジェクトの中は一覧の順。 */
+/** 開催日の古い順（日付未定は最後）、同じ日なら作った順。 */
 export function projectsInPlayOrder(s: AppState): Project[] {
   return [...s.projects].sort((a, b) => Number(!a.date) - Number(!b.date) || a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at));
-}
-
-/**
- * データベースのレートを、初期レートから全プロジェクトの試合で計算し直す。
- * K・p・G は試合ごとに、その試合のプロジェクトの設定を使う。
- */
-export function recalcGlobal(s: AppState): AppState {
-  const db = s.db.map((x) => ({ ...x, rating: x.initial_rating }));
-  for (const p of projectsInPlayOrder(s)) {
-    applyMatches(db, p.matches, { kFactor: p.config.elo_k_factor, weakWeight: p.config.pair_weak_weight, gameScale: p.config.game_scale });
-  }
-  return { ...s, db };
-}
-
-/**
- * 状態が変わるたびに呼ぶ。開いているプロジェクトで「試合結果でレートを自動更新」が ON なら、全試合で計算し直す。
- * （開いているプロジェクトの試合だけで計算すると、プロジェクトを切り替えるたびにレートが変わってしまう）
- */
-export function recalcRatings(s: AppState, force = false): AppState {
-  if (!force && !currentProject(s).config.elo_auto_update) return s;
-  return recalcGlobal(s);
-}
-
-/** 自動更新が ON か（ON のときは、計算し直しの取り消しがすぐ上書きされるので出さない） */
-export function autoRating(s: AppState): boolean {
-  return currentProject(s).config.elo_auto_update;
 }
 
 /** いまのレート（と p）を控えてから fn を当てる。「元に戻す」で控えに戻せる。 */
@@ -497,11 +492,18 @@ export function withRatingUndo(s: AppState, label: string, fn: (s: AppState) => 
   return { ...fn(s), rating_undo: snap };
 }
 
+/** レートを手で変えた人・読み込みで上書きした人を控えから外す。残りがなければ控えごと捨てる。 */
+export function dropFromUndo(u: RatingSnapshot | null, names: readonly string[]): RatingSnapshot | null {
+  if (!u || !names.some((n) => n in u.ratings)) return u;
+  const ratings = Object.fromEntries(Object.entries(u.ratings).filter(([n]) => !names.includes(n)));
+  return Object.keys(ratings).length === 0 && !u.weak ? null : { ...u, ratings };
+}
+
 /** 控えに戻す。消えた人・消えたプロジェクトは飛ばす。 */
 export function undoRatings(s: AppState): AppState {
   const u = s.rating_undo;
   if (!u) return s;
-  const db = s.db.map((p) => (p.name in u.ratings ? { ...p, rating: u.ratings[p.name] } : p));
+  const db = s.db.map((p) => (p.name in u.ratings ? { ...p, rating: u.ratings[p.name], initial_rating: u.ratings[p.name] } : p));
   const projects = u.weak
     ? s.projects.map((p) => (p.id === u.weak!.project ? { ...p, config: { ...p.config, pair_weak_weight: u.weak!.value } } : p))
     : s.projects;

@@ -102,10 +102,10 @@ const CSV_COLUMNS: Record<string, keyof PlayerPatch | "inactive"> = {
   active: "active",
 };
 
-/** Excel で開けるように BOM と CRLF を付ける。休会中の人は「休会」の列に 1。 */
+/** Excel で開けるように BOM と CRLF を付ける。休会中の人は「休会」の列に 1。レートは 1 つ（固定値）なので列も 1 つ */
 export function databaseCsv(s: AppState): string {
-  const rows = [["名前", "所属", "レート", "初期レート", "休会"]];
-  for (const p of s.db) rows.push([p.name, p.team ?? "", String(round2(p.rating)), String(round2(p.initial_rating)), p.active ? "" : "1"]);
+  const rows = [["名前", "所属", "レート", "休会"]];
+  for (const p of s.db) rows.push([p.name, p.team ?? "", String(round2(p.rating)), p.active ? "" : "1"]);
   return "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
 

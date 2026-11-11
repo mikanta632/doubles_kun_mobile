@@ -73,7 +73,7 @@ export function buildDashboard(players: readonly Player[], allMatches: readonly 
   const courts = Math.max(1, cfg.courts);
   const nameSet = new Set(players.map((p) => p.name));
   const matches = allMatches.filter((m) => [...m.team_a, ...m.team_b].some((n) => nameSet.has(n)));
-  const ratings = new Map(players.map((p) => [p.name, p.initial_rating ?? p.rating]));
+  const ratings = new Map(players.map((p) => [p.name, p.rating]));
   const names = [...ratings.keys()].sort((a, b) => ratings.get(b)! - ratings.get(a)! || (a < b ? -1 : a > b ? 1 : 0));
   const rounds = Math.ceil(matches.length / courts);
 
@@ -93,7 +93,8 @@ export function buildDashboard(players: readonly Player[], allMatches: readonly 
     winBand: cfg.day_win_prob_min,
     gameScale: cfg.game_scale,
     weakWeight: cfg.pair_weak_weight,
-    applyElo: cfg.elo_auto_update,
+    // レートは固定値（試合結果では動かさない）
+    applyElo: false,
     joined: opts.joined,
   });
   // 名簿全員ではなく出席者で数える。名簿 20 人・参加 9 人・1 面なら 7 ではなく 5（エンジンと同じ）

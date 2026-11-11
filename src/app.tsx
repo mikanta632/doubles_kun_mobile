@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "preact/hooks";
-import { currentProject, loadState, recalcRatings, saveState, updateCurrent, type AppState, type Project } from "./store";
+import { currentProject, loadState, saveState, updateCurrent, type AppState, type Project } from "./store";
 import { MembersView } from "./ui/MembersView";
 import { MatchesView } from "./ui/MatchesView";
 import { DashboardView } from "./ui/DashboardView";
@@ -37,12 +37,10 @@ export function App() {
   const [tab, setTab] = useState<Tab>(() => (currentProject(state).members.length ? "matches" : "members"));
   const [toast, setToast] = useState<string | null>(null);
 
-  // どんな変更のあとも、開いているプロジェクトの試合結果からレートを計算し直す
-  // （結果の入力・削除・並べ替え・読み込み・プロジェクトの切り替え・設定の変更をすべて拾う）。
-  // レートの自動更新が OFF のときは何もしない
+  // 変更のたびに保存する。レートは固定値なので、試合結果では動かさない
   const update: Update = useCallback((fn) => {
     setState((prev) => {
-      const next = recalcRatings(fn(prev));
+      const next = fn(prev);
       saveState(next);
       return next;
     });
