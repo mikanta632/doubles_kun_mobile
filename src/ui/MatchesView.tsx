@@ -4,8 +4,9 @@ import { GoodDayEngine, countPlays, notesOf } from "../core/dayEngine";
 import { pairingToMatch, type Match, type MatchPairing, type MatchResult } from "../core/models";
 import { gameWinProb, pairStrength } from "../core/winModel";
 import { buildDashboard } from "../dashboard";
-import { attendingPlayers, availablePlayers, lateMaps, memberPlayers, type Project } from "../store";
+import { attendingPlayers, availablePlayers, deleteMatches, lateMaps, memberPlayers, type Project } from "../store";
 import { CheckIcon, ChevronDown, ChevronLeft, ChevronRight, LayersIcon, NoteIcon, PlusIcon } from "./icons";
+import { MatchDetailSheet } from "./MatchDetailSheet";
 import { PlanSheet } from "./PlanSheet";
 import { ProjectsSheet, whenWhere } from "./ProjectSheets";
 import { Sheet } from "./Sheet";
@@ -27,11 +28,15 @@ const isDone = (m: Match) => m.result !== null;
  *   待機   … 組んだがまだコートに入っていない試合。組んだ順に上から入る
  *   終了   … 結果を入れた試合
  * 試合の並び（＝ラウンドの数え方）はプロジェクトの matches の順のまま。待機と終了は長押しで並べ替えられる。
+ * 試合をタップすると詳細（勝率予想など）。「選ぶ」で何試合かを選んでまとめて削除できる（選んでいる間は並べ替えない）。
  */
 export function MatchesView(props: ViewProps) {
   const { state, project, updateProject, notify, go } = props;
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [editing, setEditing] = useState<Match | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
   const [switching, setSwitching] = useState(false);
   const [planning, setPlanning] = useState(false);
 
@@ -137,20 +142,60 @@ export function MatchesView(props: ViewProps) {
 
   const byId = new Map(project.matches.map((m) => [m.id, m]));
   const nextNo = project.matches.length + 1;
+  // 詳細は id で持ち、いまの試合を引き直す（開いている間に開始・結果入力されても最新を出す）
+  const detail = detailId ? byId.get(detailId) ?? null : null;
+
+  // ---- 選んでまとめて削除 ----
+  const pickedIds = project.matches.filter((m) => picked.has(m.id)).map((m) => m.id);
+  const allPicked = project.matches.length > 0 && pickedIds.length === project.matches.length;
+  const togglePick = (id: string) =>
+    setPicked((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const endSelect = () => {
+    setSelecting(false);
+    setPicked(new Set());
+  };
+  const removePicked = () => {
+    const n = pickedIds.length;
+    if (n === 0) return;
+    const nDone = pickedIds.filter((id) => byId.get(id)!.result !== null).length;
+    const nPlay = pickedIds.filter((id) => byId.get(id)!.in_play && byId.get(id)!.result === null).length;
+    const parts = [nDone && `結果を入れた ${nDone} 試合`, nPlay && `進行中の ${nPlay} 試合`].filter(Boolean).join("・");
+    if (!confirm(`${n} 試合を削除しますか？${parts ? `（${parts}を含みます）` : ""}`)) return;
+    updateProject((p) => deleteMatches(p, pickedIds));
+    notify(`${n} 試合を削除しました。`);
+    endSelect();
+  };
 
   const row = (m: Match, kind: "play" | "queue") => {
     const no = noOf.get(m.id)!;
     const p = kind === "play" ? probOf(m) : null;
+    const lines = (
+      <>
+        <span class="team-line"><span class="bar a" />{m.team_a.join("・")}{p !== null && <span class="pct">{Math.round(p * 100)}%</span>}</span>
+        <span class="team-line"><span class="bar b" />{m.team_b.join("・")}{p !== null && <span class="pct">{Math.round((1 - p) * 100)}%</span>}</span>
+      </>
+    );
+    if (selecting) {
+      return (
+        <label class={"qrow" + (kind === "queue" ? " queued" : "")} style="cursor:pointer">
+          <span class="num"><b>#{no}</b><span>R{roundOf(no)}</span></span>
+          <span class="teams">{lines}</span>
+          <span class="pick"><input type="checkbox" checked={picked.has(m.id)} onChange={() => togglePick(m.id)} aria-label={`試合 ${no} を選ぶ`} /></span>
+        </label>
+      );
+    }
     return (
       <div class={"qrow" + (kind === "queue" ? " queued" : "")}>
-        <button class="num" aria-label={`試合 ${no} を開く`} onClick={() => setEditing(m)}>
+        <button class="num" aria-label={`試合 ${no} の詳細`} onClick={() => setDetailId(m.id)}>
           <b>#{no}</b>
           <span>R{roundOf(no)}</span>
         </button>
-        <button class="teams" onClick={() => setEditing(m)}>
-          <span class="team-line"><span class="bar a" />{m.team_a.join("・")}{p !== null && <span class="pct">{Math.round(p * 100)}%</span>}</span>
-          <span class="team-line"><span class="bar b" />{m.team_b.join("・")}{p !== null && <span class="pct">{Math.round((1 - p) * 100)}%</span>}</span>
-        </button>
+        <button class="teams" onClick={() => setDetailId(m.id)}>{lines}</button>
         {kind === "play" ? (
           <button class="btn primary" onClick={() => setEditing(m)}>結果</button>
         ) : (
@@ -167,9 +212,16 @@ export function MatchesView(props: ViewProps) {
           <span class="eyebrow">{whenWhere(project)}・参加 {attending.length}/{members.length}</span>
           <span class="title"><span>{project.name}</span><ChevronDown /></span>
         </button>
-        <button class="btn icon" aria-label="まとめて組む" title="まとめて組む" onClick={() => setPlanning(true)} disabled={attending.length < 4}>
-          <LayersIcon />
-        </button>
+        {selecting ? (
+          <button class="btn text" style="font-weight:600;color:var(--ink)" onClick={endSelect}>完了</button>
+        ) : (
+          <div class="row" style="gap:4px">
+            <button class="btn text" onClick={() => setSelecting(true)} disabled={project.matches.length === 0}>選ぶ</button>
+            <button class="btn icon" aria-label="まとめて組む" title="まとめて組む" onClick={() => setPlanning(true)} disabled={attending.length < 4}>
+              <LayersIcon />
+            </button>
+          </div>
+        )}
       </header>
 
       {members.length === 0 ? (
@@ -194,15 +246,20 @@ export function MatchesView(props: ViewProps) {
               <span class="note">{queued.length ? "上から順に・コートに入ったら「開始」" : ""}</span>
             </div>
             <div class="panel">
-              {queued.length > 0 && <Sortable ids={queued.map((m) => m.id)} onReorder={reorderSubset} render={(id) => row(byId.get(id)!, "queue")} />}
-              <div class="panel-foot" style={queued.length ? "" : "border-top:0"}>
-                <button class="btn tall block" onClick={propose} disabled={!canPropose}><PlusIcon />次の試合を組む</button>
-                <div class="foot">
-                  {canPropose
-                    ? <>待機の最後（<span class="mono">#{nextNo}・R{roundOf(nextNo)}</span>）に入ります</>
-                    : "組める人が 4 人未満です（メンバータブで参加を確認）"}
+              {queued.length > 0 && (selecting
+                ? <div class="list">{queued.map((m) => <div key={m.id}>{row(m, "queue")}</div>)}</div>
+                : <Sortable ids={queued.map((m) => m.id)} onReorder={reorderSubset} render={(id) => row(byId.get(id)!, "queue")} />)}
+              {!selecting && (
+                <div class="panel-foot" style={queued.length ? "" : "border-top:0"}>
+                  <button class="btn tall block" onClick={propose} disabled={!canPropose}><PlusIcon />次の試合を組む</button>
+                  <div class="foot">
+                    {canPropose
+                      ? <>待機の最後（<span class="mono">#{nextNo}・R{roundOf(nextNo)}</span>）に入ります</>
+                      : "組める人が 4 人未満です（メンバータブで参加を確認）"}
+                  </div>
                 </div>
-              </div>
+              )}
+              {selecting && queued.length === 0 && <div class="empty-note">待機の試合はありません</div>}
             </div>
           </section>
 
@@ -221,16 +278,36 @@ export function MatchesView(props: ViewProps) {
 
           {done.length > 0 && (
             <section class="section">
-              <div class="section-h"><h2>終了 <span class="mono">{done.length}</span></h2><span class="note">長押しで並べ替え</span></div>
+              <div class="section-h"><h2>終了 <span class="mono">{done.length}</span></h2><span class="note">{selecting ? "" : "長押しで並べ替え"}</span></div>
               <div class="panel">
-                <Sortable
-                  ids={[...done].reverse().map((m) => m.id)}
-                  onReorder={(ids) => reorderSubset([...ids].reverse())}
-                  render={(id) => <DoneRow m={byId.get(id)!} no={noOf.get(id)!} round={roundOf(noOf.get(id)!)} onOpen={setEditing} />}
-                />
+                {selecting ? (
+                  <div class="list">
+                    {[...done].reverse().map((m) => (
+                      <div key={m.id}><DoneRow m={m} no={noOf.get(m.id)!} round={roundOf(noOf.get(m.id)!)} picked={picked.has(m.id)} onPick={togglePick} /></div>
+                    ))}
+                  </div>
+                ) : (
+                  <Sortable
+                    ids={[...done].reverse().map((m) => m.id)}
+                    onReorder={(ids) => reorderSubset([...ids].reverse())}
+                    render={(id) => <DoneRow m={byId.get(id)!} no={noOf.get(id)!} round={roundOf(noOf.get(id)!)} onOpen={(m) => setDetailId(m.id)} />}
+                  />
+                )}
               </div>
             </section>
           )}
+        </>
+      )}
+
+      {selecting && (
+        <>
+          {/* 下のバーで最後の試合が隠れないように */}
+          <div style="height:72px" aria-hidden="true" />
+          <div class="bulkbar" role="toolbar" aria-label="選んだ試合">
+            <span class="mono grow">{pickedIds.length} 試合を選択</span>
+            <button class="btn text" onClick={() => setPicked(allPicked ? new Set() : new Set(project.matches.map((m) => m.id)))}>{allPicked ? "選択を外す" : "すべて選ぶ"}</button>
+            <button class="btn" style="color:var(--danger)" onClick={removePicked} disabled={pickedIds.length === 0}>削除</button>
+          </div>
         </>
       )}
 
@@ -246,6 +323,16 @@ export function MatchesView(props: ViewProps) {
           onClose={() => setProposal(null)}
         />
       )}
+      {detail && !editing && (
+        <MatchDetailSheet
+          {...props}
+          match={detail}
+          courts={courts}
+          onResult={() => setEditing(detail)}
+          onStart={() => start(detail)}
+          onClose={() => setDetailId(null)}
+        />
+      )}
       {editing && <ResultSheet {...props} match={editing} courts={courts} onClose={() => setEditing(null)} />}
       {switching && <ProjectsSheet {...props} onClose={() => setSwitching(false)} />}
       {planning && <PlanSheet {...props} onClose={() => setPlanning(false)} />}
@@ -253,11 +340,12 @@ export function MatchesView(props: ViewProps) {
   );
 }
 
-function DoneRow({ m, no, round, onOpen }: { m: Match; no: number; round: number; onOpen: (m: Match) => void }) {
+/** 終了した試合の行。onPick を渡すと選ぶ行（右にチェック）、渡さなければタップで onOpen */
+function DoneRow({ m, no, round, onOpen, picked, onPick }: { m: Match; no: number; round: number; onOpen?: (m: Match) => void; picked?: boolean; onPick?: (id: string) => void }) {
   const ga = m.games_a;
   const gb = m.games_b;
-  return (
-    <button class="rec" onClick={() => onOpen(m)}>
+  const body = (
+    <>
       <span class="no">R{round} #{no}</span>
       <span class={m.result === "A" ? "win" : m.result === "B" ? "lose" : ""}>{m.team_a.join("・")}</span>
       <span class="mid">
@@ -272,8 +360,17 @@ function DoneRow({ m, no, round, onOpen }: { m: Match; no: number; round: number
         )}
       </span>
       <span class={"t-b " + (m.result === "B" ? "win" : m.result === "A" ? "lose" : "")}>{m.team_b.join("・")}</span>
-    </button>
+    </>
   );
+  if (onPick) {
+    return (
+      <label class="rec sel">
+        {body}
+        <span class="pick"><input type="checkbox" checked={picked} onChange={() => onPick(m.id)} aria-label={`試合 ${no} を選ぶ`} /></span>
+      </label>
+    );
+  }
+  return <button class="rec" onClick={() => onOpen?.(m)}>{body}</button>;
 }
 
 function ProposalSheet({ proposal, project, hideRatings, eyebrow, waitOf, onMove, onAdopt, onClose }: {
@@ -368,7 +465,7 @@ function ResultSheet({ match, courts, project, updateProject, onClose }: ViewPro
 
   const remove = () => {
     if (!confirm(`試合 #${no} を削除しますか？`)) return;
-    updateProject((p) => ({ ...p, matches: p.matches.filter((m) => m.id !== match.id) }));
+    updateProject((p) => deleteMatches(p, [match.id]));
     onClose();
   };
 

@@ -113,3 +113,14 @@ describe("元に戻すの控え", () => {
     expect(mergePlayers(s0, [newPlayer("A", 1600), newPlayer("B", 1600)]).rating_undo).toBeNull();
   });
 });
+
+describe("試合の削除", () => {
+  it("選んだ試合を消し、遅れて来た人の来た時点は前の試合を消した分だけ詰める", async () => {
+    const { deleteMatches } = await import("../src/store");
+    const ms = Array.from({ length: 5 }, () => done(["A", "B"], ["C", "D"]));
+    const p = { ...newProject("x", { members: ["Z", "Y"], matches: ms }), late: { Z: { plays: 2, at: 3 }, Y: { plays: 1, at: 1 } } };
+    const q = deleteMatches(p, [ms[0].id, ms[4].id]);
+    expect(q.matches.map((m) => m.id)).toEqual([ms[1].id, ms[2].id, ms[3].id]);
+    expect(q.late).toEqual({ Z: { plays: 2, at: 2 }, Y: { plays: 1, at: 0 } });
+  });
+});

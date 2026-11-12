@@ -322,6 +322,17 @@ export function setLate(p: Project, name: string, plays: number | null): Project
   return { ...p, late };
 }
 
+/**
+ * 試合を消す。遅れて来た人の「来た時点（そのときの試合数）」は、それより前の試合を消した分だけ詰める
+ * （詰めないと、来る前のラウンドが待ちに数えられたり、来た後のラウンドが数えられなかったりする）。
+ */
+export function deleteMatches(p: Project, ids: readonly string[]): Project {
+  const set = new Set(ids);
+  const removedBefore = (at: number) => p.matches.slice(0, at).filter((m) => set.has(m.id)).length;
+  const late = Object.fromEntries(Object.entries(p.late).map(([n, x]) => [n, { ...x, at: x.at - removedBefore(x.at) }]));
+  return { ...p, matches: p.matches.filter((m) => !set.has(m.id)), late };
+}
+
 // ---- メンバーの 3 層 ----
 
 /** 名簿（データベース上の Player）。members の順。 */

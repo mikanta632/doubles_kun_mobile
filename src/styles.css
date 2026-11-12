@@ -31,6 +31,8 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+/* スクロールバーが出ても消えても、中身が横にずれないようにする */
+html { scrollbar-gutter: stable; }
 body {
   font-family: var(--sans);
   font-size: 15px;
@@ -178,6 +180,9 @@ input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var
 .qrow.queued .team-line { font-size: 15px; font-weight: 400; }
 .qrow.queued .team-line .bar { height: 14px; }
 .qrow .btn { min-height: 40px; padding: 0 14px; font-size: 13px; }
+/* 選ぶときの右端のチェック（行全体がラベル） */
+.qrow .pick, .rec .pick { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-right: -10px; }
+.qrow .pick input, .rec .pick input { width: 22px; height: 22px; }
 .bar.a { background: var(--team-a); }
 .bar.b { background: var(--team-b); }
 .panel-foot { padding: 12px 14px; border-top: 1px solid var(--line-soft); }
@@ -199,6 +204,7 @@ input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var
 }
 .rec .no { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .rec .t-b { text-align: right; }
+.rec.sel { grid-template-columns: 52px minmax(0, 1fr) 64px minmax(0, 1fr) 34px; }
 .rec .win { font-weight: 600; }
 .rec .lose { color: var(--muted); }
 .rec .mid { justify-self: center; text-align: center; }
@@ -302,7 +308,7 @@ td.hot { background: #fbe9e7; color: var(--danger); font-weight: 600; }
   background: var(--card); width: 100%; max-width: 720px;
   border-radius: 14px 14px 0 0;
   padding: 8px 20px calc(20px + var(--edge-bottom));
-  max-height: 92dvh; overflow: auto;
+  max-height: 92dvh; overflow: auto; scrollbar-gutter: stable;
   display: flex; flex-direction: column; gap: 16px;
 }
 .sheet > * { flex-shrink: 0; }
@@ -312,7 +318,14 @@ td.hot { background: #fbe9e7; color: var(--danger); font-weight: 600; }
 .sheet-head { display: flex; align-items: center; gap: 8px; }
 .sheet-head h2 { margin: 0; font-size: 19px; font-weight: 600; }
 .sheet .actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
-.sheet .scroll { max-height: 45dvh; overflow: auto; }
+.sheet .scroll { max-height: 45dvh; overflow: auto; scrollbar-gutter: stable; }
+/* 試合を選んでいるときの下のバー（タブバーのすぐ上） */
+.bulkbar {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 9;
+  bottom: calc(var(--nav-h) + var(--edge-bottom)); width: min(720px, 100%);
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  background: var(--card); border-top: 1px solid var(--line); font-size: 13px;
+}
 /* まとめて操作のボタン。リストが長くても下に貼り付いて見える */
 .sheet .bulk { position: sticky; bottom: calc(-20px - var(--edge-bottom)); margin: 0 -20px calc(-20px - var(--edge-bottom)); padding: 10px 20px calc(12px + var(--edge-bottom)); background: var(--card); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
 
