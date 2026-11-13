@@ -63,6 +63,7 @@ a { color: var(--ink); }
   display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
   padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer;
 }
+.switcher .eyebrow { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .switcher .title { display: flex; align-items: center; gap: 4px; font-size: 21px; font-weight: 600; max-width: 100%; }
 .switcher .title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .switcher .title svg { flex: none; }

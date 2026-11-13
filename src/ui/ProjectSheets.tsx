@@ -1,8 +1,8 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
 import { newPlayer } from "../core/models";
-import { addProject, dropLate, newProject, playedIn, removeProject, todayIso, updateCurrent, type Project } from "../store";
-import { CheckIcon, PlusIcon, SearchIcon } from "./icons";
+import { addProject, newProject, playedIn, removeProject, setRoster, todayIso, type AppState, type Project } from "../store";
+import { CheckIcon, ChevronRight, PlusIcon, SearchIcon } from "./icons";
 import { Sheet } from "./Sheet";
 
 /** 既定で出すプロジェクトの数 */
@@ -21,23 +21,7 @@ export function whenWhere(p: Project): string {
   return [fmtDate(p.date), p.place].filter(Boolean).join("・");
 }
 
-/**
- * 名簿に入れる／外す。このプロジェクトの試合に出ている人は外せない。
- * 入れた人は、そのまま今日の参加にも入れる。
- */
-export function toggleMember({ project, updateProject, notify }: Pick<ViewProps, "project" | "updateProject" | "notify">, name: string) {
-  if (project.members.includes(name)) {
-    if (playedIn(project, name)) {
-      notify("このプロジェクトの試合に出ている人は名簿から外せません。参加のチェックを外してください。");
-      return;
-    }
-    updateProject((p) => ({ ...p, members: p.members.filter((n) => n !== name), selected: p.selected.filter((n) => n !== name), late: dropLate(p.late, [name]) }));
-  } else {
-    updateProject((p) => ({ ...p, members: [...p.members, name], selected: [...p.selected, name] }));
-  }
-}
-
-type Mode = "list" | "edit" | "new";
+type Mode = "list" | "edit" | "new" | "members";
 
 /** 試合タブの見出しから開く。プロジェクトの切り替え・編集・作成 */
 export function ProjectsSheet(props: ViewProps & { onClose: () => void }) {
@@ -56,7 +40,8 @@ export function ProjectsSheet(props: ViewProps & { onClose: () => void }) {
   const folded = !q && !all && found.length > RECENT + 1;
   const shown = folded ? dedupeById([...found.slice(0, RECENT), ...found.filter((p) => p.id === project.id)]) : found;
 
-  if (mode === "edit") return <ProjectEditSheet {...props} onClose={() => setMode("list")} onDone={onClose} />;
+  if (mode === "edit") return <ProjectEditSheet {...props} onMembers={() => setMode("members")} onClose={() => setMode("list")} onDone={onClose} />;
+  if (mode === "members") return <RosterEditSheet {...props} onClose={() => setMode("edit")} />;
   if (mode === "new") return <NewProjectSheet {...props} onClose={() => setMode("list")} onDone={onClose} />;
 
   const open = (p: Project) => {
@@ -86,7 +71,7 @@ export function ProjectsSheet(props: ViewProps & { onClose: () => void }) {
         {folded && <button class="btn text block" style="min-height:48px" onClick={() => setAll(true)}>すべて表示（{found.length} 件）</button>}
       </div>
       <div class="actions">
-        <button class="btn tall grow" onClick={() => setMode("edit")}>名前・日付を編集</button>
+        <button class="btn tall grow" onClick={() => setMode("edit")}>編集</button>
         <button class="btn primary tall grow" onClick={() => setMode("new")}><PlusIcon />新しく作る</button>
       </div>
     </Sheet>
@@ -98,7 +83,7 @@ function dedupeById(ps: Project[]): Project[] {
   return ps.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
 }
 
-function ProjectEditSheet({ project, update, updateProject, notify, onClose, onDone }: ViewProps & { onClose: () => void; onDone: () => void }) {
+function ProjectEditSheet({ project, update, updateProject, notify, onMembers, onClose, onDone }: ViewProps & { onMembers: () => void; onClose: () => void; onDone: () => void }) {
   const [name, setName] = useState(project.name);
   const [date, setDate] = useState(project.date);
   const [place, setPlace] = useState(project.place);
@@ -136,6 +121,16 @@ function ProjectEditSheet({ project, update, updateProject, notify, onClose, onD
           <input type="text" placeholder="例: 第2体育館" value={place} onInput={(e) => setPlace((e.target as HTMLInputElement).value)} />
         </label>
       </div>
+      <div class="panel">
+        <button class="lrow" onClick={onMembers}>
+          <span class="body">
+            <span>メンバー</span>
+            <span class="sub">このプロジェクトに参加する人をデータベースから選ぶ</span>
+          </span>
+          <span class="count">{project.members.length} 人</span>
+          <span class="chev"><ChevronRight /></span>
+        </button>
+      </div>
       <div class="actions">
         <button class="btn danger tall" onClick={remove}>削除</button>
         <span class="grow" />
@@ -146,22 +141,26 @@ function ProjectEditSheet({ project, update, updateProject, notify, onClose, onD
   );
 }
 
-function NewProjectSheet({ project, update, notify, onClose, onDone }: ViewProps & { onClose: () => void; onDone: () => void }) {
+function NewProjectSheet(props: ViewProps & { onClose: () => void; onDone: () => void }) {
+  const { state, project, update, notify, onClose, onDone } = props;
   const [name, setName] = useState("");
   const [date, setDate] = useState(todayIso());
   const [place, setPlace] = useState(project.place);
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  const activeNames = useMemo(() => activeSet(state), [state.db]);
+  // いまのプロジェクトと同じメンバー（休会中の人は除く）
+  const sameAsCurrent = project.members.filter((n) => activeNames.has(n));
 
   const create = () => {
     const n = name.trim();
     if (!n) return;
-    const p = newProject(n, {
-      date,
-      place: place.trim(),
-      config: { ...project.config },
-      settings: { ...project.settings },
-    });
+    const p = setRoster(
+      newProject(n, { date, place: place.trim(), config: { ...project.config }, settings: { ...project.settings } }),
+      [...picked],
+      activeNames,
+    );
     update((s) => addProject(s, p));
-    notify(`「${n}」を作って開きました。`);
+    notify(`「${n}」を作って開きました（メンバー ${p.members.length} 人）。`);
     onDone();
   };
 
@@ -181,6 +180,15 @@ function NewProjectSheet({ project, update, notify, onClose, onDone }: ViewProps
           <input type="text" value={place} onInput={(e) => setPlace((e.target as HTMLInputElement).value)} />
         </label>
       </div>
+      <section class="section">
+        <div class="section-h">
+          <h2>メンバー <span class="mono">{picked.size}</span></h2>
+          {sameAsCurrent.length > 0 && (
+            <button class="btn text" onClick={() => setPicked(new Set(sameAsCurrent))}>「{project.name}」と同じにする</button>
+          )}
+        </div>
+        <MemberPicker {...props} picked={picked} setPicked={setPicked} locked={new Set()} />
+      </section>
       <div class="actions">
         <span class="grow" />
         <button class="btn tall" onClick={onClose}>戻る</button>
@@ -190,20 +198,47 @@ function NewProjectSheet({ project, update, notify, onClose, onDone }: ViewProps
   );
 }
 
-/** データベースから名簿に入れる人を選ぶ。まだ登録していない人はここで登録もできる。 */
-export function RosterPickSheet({ state, project, update, notify, onClose }: ViewProps & { onClose: () => void }) {
-  const [query, setQuery] = useState("");
-  const [picked, setPicked] = useState<Set<string>>(() => new Set());
-  const [newName, setNewName] = useState("");
-  const memberSet = new Set(project.members);
-  const q = query.trim();
-  const candidates = state.db.filter((p) => p.active && !memberSet.has(p.name) && (!q || p.name.includes(q) || (p.team ?? "").includes(q)));
+function activeSet(s: AppState): Set<string> {
+  return new Set(s.db.filter((p) => p.active).map((p) => p.name));
+}
 
-  const toggle = (name: string) =>
-    setPicked((s) => {
-      const n = new Set(s);
+/**
+ * データベースから、プロジェクトのメンバーにする人を選ぶ（チェックが付いている人がメンバー）。
+ * まだ登録していない人はここで登録もできる（プロジェクト側からデータベースに書き込むのはここだけ）。
+ * locked の人（このプロジェクトの試合に出ている人）はチェックを外せない。休会中の人は、すでに選ばれていなければ出さない。
+ */
+type SetUpdater = (fn: (prev: Set<string>) => Set<string>) => void;
+
+function MemberPicker({ state, update, notify, picked, setPicked, locked }: ViewProps & { picked: Set<string>; setPicked: SetUpdater; locked: Set<string> }) {
+  const [query, setQuery] = useState("");
+  const [newName, setNewName] = useState("");
+  const q = query.trim();
+  const candidates = state.db.filter((p) => (p.active || picked.has(p.name)) && (!q || p.name.includes(q) || (p.team ?? "").includes(q)));
+  const shownActive = candidates.filter((p) => p.active);
+  const allShown = shownActive.length > 0 && shownActive.every((p) => picked.has(p.name));
+
+  const toggle = (name: string) => {
+    if (locked.has(name)) {
+      notify("このプロジェクトの試合に出ている人は外せません。");
+      return;
+    }
+    // 続けてタップしても取りこぼさないよう、直前の状態から作る
+    setPicked((prev) => {
+      const n = new Set(prev);
       if (n.has(name)) n.delete(name);
       else n.add(name);
+      return n;
+    });
+  };
+
+  // 表示中の人をまとめて選ぶ／外す（試合に出ている人は外さない）
+  const toggleShown = () =>
+    setPicked((prev) => {
+      const n = new Set(prev);
+      for (const p of shownActive) {
+        if (!allShown) n.add(p.name);
+        else if (!locked.has(p.name)) n.delete(p.name);
+      }
       return n;
     });
 
@@ -215,50 +250,66 @@ export function RosterPickSheet({ state, project, update, notify, onClose }: Vie
       return;
     }
     update((s) => ({ ...s, db: [...s.db, newPlayer(name)] }));
-    setPicked((s) => new Set(s).add(name));
+    setPicked((prev) => new Set(prev).add(name));
     setNewName("");
     setQuery("");
   };
 
-  const apply = () => {
-    const names = [...picked];
-    if (names.length === 0) return;
-    update((s) => updateCurrent(s, (p) => ({ ...p, members: [...new Set([...p.members, ...names])], selected: [...new Set([...p.selected, ...names])] })));
-    notify(`${names.length} 人を名簿に入れました。`);
+  return (
+    <>
+      {state.db.length > 0 && (
+        <div class="row">
+          <label class="search grow">
+            <SearchIcon />
+            <input type="search" placeholder="データベースから探す" aria-label="データベースから探す" value={query} onInput={(e) => setQuery((e.target as HTMLInputElement).value)} />
+          </label>
+          <button class="btn text" onClick={toggleShown} disabled={shownActive.length === 0}>{allShown ? "全員外す" : "全員選ぶ"}</button>
+        </div>
+      )}
+      <div class="panel scroll">
+        {candidates.length === 0 && <div class="empty">{q ? "見つかりません" : "データベースに登録がありません"}</div>}
+        {candidates.map((p) => (
+          <label class="lrow" key={p.name}>
+            <span class="body">
+              <span style="font-weight:600">{p.name}</span>
+              <span class="sub">{p.team ?? "所属なし"}{p.active ? "" : "・休会中"}{locked.has(p.name) ? "・試合に出ている" : ""}</span>
+            </span>
+            {!state.prefs.hide_ratings && <span class="mono" style="font-size:13px;color:var(--muted)">{Math.round(p.rating)}</span>}
+            <input type="checkbox" checked={picked.has(p.name)} disabled={locked.has(p.name)} onChange={() => toggle(p.name)} aria-label={`${p.name}をメンバーにする`} />
+          </label>
+        ))}
+      </div>
+      <div class="row">
+        <input class="grow" type="text" placeholder="データベースにいない人を登録" aria-label="新しく登録する名前" value={newName} onInput={(e) => setNewName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && register()} />
+        <button class="btn" onClick={register} disabled={!newName.trim()}>登録</button>
+      </div>
+    </>
+  );
+}
+
+/** プロジェクトのメンバーを選び直す（追加・削除）。プロジェクトの編集と、メンバータブが空のときに開く */
+export function RosterEditSheet(props: ViewProps & { onClose: () => void }) {
+  const { state, project, updateProject, notify, onClose } = props;
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(project.members));
+  const locked = useMemo(() => new Set(project.members.filter((n) => playedIn(project, n))), [project]);
+  const added = [...picked].filter((n) => !project.members.includes(n)).length;
+  const removed = project.members.filter((n) => !picked.has(n)).length;
+
+  const save = () => {
+    const active = activeSet(state);
+    updateProject((p) => setRoster(p, [...picked], active));
+    const what = [added && `${added} 人追加`, removed && `${removed} 人削除`].filter(Boolean).join("・");
+    notify(what ? `メンバーを${what}しました。` : "メンバーは変わりません。");
     onClose();
   };
 
   return (
-    <Sheet title="メンバーを追加" eyebrow={project.name} onClose={onClose}>
-      <div class="row">
-        <input class="grow" type="text" placeholder="新しく登録する名前" aria-label="新しく登録する名前" value={newName} onInput={(e) => setNewName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && register()} />
-        <button class="btn" onClick={register} disabled={!newName.trim()}>登録</button>
-      </div>
-      {state.db.length > 0 && (
-        <>
-          <label class="search">
-            <SearchIcon />
-            <input type="search" placeholder="データベースから探す" aria-label="データベースから探す" value={query} onInput={(e) => setQuery((e.target as HTMLInputElement).value)} />
-          </label>
-          <div class="panel scroll">
-            {candidates.length === 0 && <div class="empty">{q ? "見つかりません" : "名簿に入っていない人はいません"}</div>}
-            {candidates.map((p) => (
-              <label class="lrow" key={p.name}>
-                <span class="body">
-                  <span style="font-weight:600">{p.name}</span>
-                  <span class="sub">{p.team ?? "所属なし"}</span>
-                </span>
-                {!state.prefs.hide_ratings && <span class="mono" style="font-size:13px;color:var(--muted)">{Math.round(p.rating)}</span>}
-                <input type="checkbox" checked={picked.has(p.name)} onChange={() => toggle(p.name)} />
-              </label>
-            ))}
-          </div>
-        </>
-      )}
+    <Sheet title="メンバー" eyebrow={`${project.name}・${picked.size} 人`} onClose={onClose}>
+      <MemberPicker {...props} picked={picked} setPicked={setPicked} locked={locked} />
       <div class="actions">
         <span class="grow" />
-        <button class="btn tall" onClick={onClose}>キャンセル</button>
-        <button class="btn primary tall" onClick={apply} disabled={picked.size === 0}>{picked.size} 人を名簿に入れる</button>
+        <button class="btn tall" onClick={onClose}>戻る</button>
+        <button class="btn primary tall" onClick={save}>{added || removed ? `保存（+${added} −${removed}）` : "保存"}</button>
       </div>
     </Sheet>
   );

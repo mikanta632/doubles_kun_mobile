@@ -64,7 +64,7 @@ export function PlanSheet({ state, project, updateProject, notify, onClose }: Vi
   };
 
   return (
-    <Sheet title="まとめて組む" eyebrow={`参加 ${available.length} 人・${project.config.courts} 面`} onClose={onClose}>
+    <Sheet title="まとめて組む" eyebrow={`組む ${available.length} 人・${project.config.courts} 面`} onClose={onClose}>
       <label class="row between" style="min-height:44px">
         <span>何試合ぶん組むか</span>
         <input type="number" style="width:96px" inputMode="numeric" min={1} max={200} value={count} disabled={running}

@@ -124,3 +124,14 @@ describe("試合の削除", () => {
     expect(q.late).toEqual({ Z: { plays: 2, at: 2 }, Y: { plays: 1, at: 0 } });
   });
 });
+
+describe("プロジェクトのメンバー", () => {
+  it("並びを保って足し、足した人は組み合わせに入れる（休会中は除く）。外した人は遅れて来たの記録も消す。試合に出た人は外さない", async () => {
+    const { setRoster } = await import("../src/store");
+    const p0 = { ...newProject("x", { members: ["A", "B", "C"], selected: ["A", "C"], matches: [done(["A", "X"], ["Y", "Z"])] }), late: { C: { plays: 1, at: 0 } } };
+    const p = setRoster(p0, ["C", "D", "E"], new Set(["A", "B", "C", "D"]));
+    expect(p.members).toEqual(["A", "C", "D", "E"]); // A は試合に出ているので残る
+    expect(p.selected).toEqual(["A", "C", "D"]); // E は休会中なので入れない
+    expect(setRoster(p0, ["A", "B"], new Set(["A", "B", "C"])).late).toEqual({});
+  });
+});

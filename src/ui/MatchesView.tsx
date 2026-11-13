@@ -8,7 +8,7 @@ import { attendingPlayers, availablePlayers, deleteMatches, lateMaps, memberPlay
 import { CheckIcon, ChevronDown, ChevronLeft, ChevronRight, LayersIcon, NoteIcon, PlusIcon } from "./icons";
 import { MatchDetailSheet } from "./MatchDetailSheet";
 import { PlanSheet } from "./PlanSheet";
-import { ProjectsSheet, whenWhere } from "./ProjectSheets";
+import { ProjectsSheet, RosterEditSheet, whenWhere } from "./ProjectSheets";
 import { Sheet } from "./Sheet";
 import { Sortable } from "./Sortable";
 import { Wheel, type WheelOption } from "./Wheel";
@@ -39,6 +39,7 @@ export function MatchesView(props: ViewProps) {
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
   const [switching, setSwitching] = useState(false);
   const [planning, setPlanning] = useState(false);
+  const [picking, setPicking] = useState(false);
 
   const members = useMemo(() => memberPlayers(state, project), [state, project]);
   const attending = useMemo(() => attendingPlayers(state, project), [state, project]);
@@ -63,9 +64,9 @@ export function MatchesView(props: ViewProps) {
   }, [forNow, available, attending, project.matches, courts]);
   const canPropose = candidates.length >= 4;
 
-  // 出番待ちの人：コートに入っていない参加者。連続で休んだラウンド数は、始まった試合（進行中と終了）だけで数える
+  // 出番待ちの人：コートに入っていない、組み合わせに入れる人。連続で休んだラウンド数は、始まった試合（進行中と終了）だけで数える
   const started = useMemo(() => project.matches.filter((m) => m.in_play || isDone(m)), [project.matches]);
-  // 連続待ちの上限は、名簿全員ではなく今日の参加人数で決める（エンジンと同じ）
+  // 連続待ちの上限は、メンバー全員ではなく組み合わせに入れる人数で決める（エンジンと同じ）
   const late = useMemo(() => lateMaps(project), [project]);
   const dash = useMemo(() => buildDashboard(members, started, project.config, { attending: attending.length, joined: late.joined }), [members, started, project.config, attending.length, late]);
   const waitOf = useMemo(() => new Map(dash.people.rows.map((r) => [r.name, r.current_wait])), [dash]);
@@ -80,7 +81,7 @@ export function MatchesView(props: ViewProps) {
 
   const propose = () => {
     if (!canPropose) {
-      notify("組める人が 4 人未満です。メンバータブで参加を確認してください。");
+      notify("組める人が 4 人未満です。メンバータブで組み合わせに入れる人を確認してください。");
       return;
     }
     // 遅れて来た人は、仮の試合数を出場回数に足し、連続待ちは来た時点から数える
@@ -209,14 +210,14 @@ export function MatchesView(props: ViewProps) {
     <>
       <header class="head" style="align-items:center">
         <button class="switcher" aria-label="プロジェクトを切り替え" onClick={() => setSwitching(true)}>
-          <span class="eyebrow">{whenWhere(project)}・参加 {attending.length}/{members.length}</span>
+          <span class="eyebrow">{whenWhere(project)}・組む {attending.length}/{members.length}</span>
           <span class="title"><span>{project.name}</span><ChevronDown /></span>
         </button>
         {selecting ? (
           <button class="btn text" style="font-weight:600;color:var(--ink)" onClick={endSelect}>完了</button>
         ) : (
-          <div class="row" style="gap:4px">
-            <button class="btn text" onClick={() => setSelecting(true)} disabled={project.matches.length === 0}>選ぶ</button>
+          <div class="row" style="gap:4px;flex:none">
+            <button class="btn text" style="white-space:nowrap" onClick={() => setSelecting(true)} disabled={project.matches.length === 0}>選ぶ</button>
             <button class="btn icon" aria-label="まとめて組む" title="まとめて組む" onClick={() => setPlanning(true)} disabled={attending.length < 4}>
               <LayersIcon />
             </button>
@@ -226,8 +227,8 @@ export function MatchesView(props: ViewProps) {
 
       {members.length === 0 ? (
         <div class="panel empty">
-          まず名簿を作りましょう。メンバータブで、試合に入れる人を追加します。
-          <div><button class="btn primary" onClick={() => go("members")}>メンバーを追加</button></div>
+          まず、このプロジェクトのメンバー（参加者）をデータベースから選びましょう。
+          <div><button class="btn primary" onClick={() => setPicking(true)}>メンバーを選ぶ</button></div>
         </div>
       ) : (
         <>
@@ -255,7 +256,7 @@ export function MatchesView(props: ViewProps) {
                   <div class="foot">
                     {canPropose
                       ? <>待機の最後（<span class="mono">#{nextNo}・R{roundOf(nextNo)}</span>）に入ります</>
-                      : "組める人が 4 人未満です（メンバータブで参加を確認）"}
+                      : "組める人が 4 人未満です（メンバータブで組み合わせに入れる人を確認）"}
                   </div>
                 </div>
               )}
@@ -336,6 +337,7 @@ export function MatchesView(props: ViewProps) {
       {editing && <ResultSheet {...props} match={editing} courts={courts} onClose={() => setEditing(null)} />}
       {switching && <ProjectsSheet {...props} onClose={() => setSwitching(false)} />}
       {planning && <PlanSheet {...props} onClose={() => setPlanning(false)} />}
+      {picking && <RosterEditSheet {...props} onClose={() => setPicking(false)} />}
     </>
   );
 }

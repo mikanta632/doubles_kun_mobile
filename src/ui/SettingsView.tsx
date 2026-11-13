@@ -34,9 +34,9 @@ export function SettingsView(props: ViewProps) {
         } else {
           update((s) => addProject(mergePlayers(s, imp.players), imp.project));
         }
-        notify(`プロジェクト「${imp.project.name}」を読み込みました（名簿 ${imp.project.members.length} 人・${imp.project.matches.length} 試合）。`);
+        notify(`プロジェクト「${imp.project.name}」を読み込みました（メンバー ${imp.project.members.length} 人・${imp.project.matches.length} 試合）。`);
       } else if (imp.kind === "players") {
-        // players.json はデスクトップ版のプロジェクトのメンバー。データベースに足し、このプロジェクトの名簿に入れる
+        // players.json はデスクトップ版のプロジェクトのメンバー。データベースに足し、このプロジェクトのメンバーに入れる
         update((s) => {
           const merged = mergePlayers(s, imp.players);
           return updateCurrent(merged, (p) => {
@@ -46,10 +46,10 @@ export function SettingsView(props: ViewProps) {
             return { ...p, members, selected };
           });
         });
-        notify(`${imp.players.length} 人を読み込み、「${project.name}」の名簿に入れました。`);
+        notify(`${imp.players.length} 人を読み込み、「${project.name}」のメンバーに入れました。`);
       } else {
         if (project.matches.length > 0 && !confirm(`「${project.name}」の試合をすべて置き換えます。よろしいですか？`)) return;
-        // 試合に出ている人がデータベースにいなければ、名前だけ登録して名簿に入れる
+        // 試合に出ている人がデータベースにいなければ、名前だけ登録してメンバーに入れる
         update((s) => {
           const known = new Set(s.db.map((p) => p.name));
           const names = [...new Set(imp.matches.flatMap((m) => [...m.team_a, ...m.team_b]))];
@@ -158,7 +158,7 @@ export function SettingsView(props: ViewProps) {
         <div class="section-h"><h2 class="danger">削除</h2></div>
         <div class="panel">
           <button class="lrow danger" disabled={project.matches.length === 0}
-            onClick={() => { if (confirm(`「${project.name}」の試合 ${project.matches.length} 件を消しますか？（名簿は残ります）`)) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>
+            onClick={() => { if (confirm(`「${project.name}」の試合 ${project.matches.length} 件を消しますか？（メンバーは残ります）`)) { updateProject((p) => ({ ...p, matches: [] })); notify("試合を消しました。"); } }}>
             <span class="body">このプロジェクトの試合を削除</span>
             <span class="count" style="color:inherit">{project.matches.length}</span>
           </button>
@@ -190,14 +190,14 @@ function ExportSheet({ state, project, onClose }: ViewProps & { onClose: () => v
         <button class="lrow" onClick={exportAll}>
           <span class="body">
             <span>このプロジェクト</span>
-            <span class="sub">名簿・試合・設定をまとめて。このアプリで読み込めます</span>
+            <span class="sub">メンバー・試合・設定をまとめて。このアプリで読み込めます</span>
           </span>
           <span class="chev"><ChevronRight /></span>
         </button>
         <button class="lrow" onClick={() => downloadText("players.json", playersJson(state, project))}>
           <span class="body">
             <span class="mono">players.json</span>
-            <span class="sub">名簿だけ（デスクトップ版と同じ形）</span>
+            <span class="sub">メンバーだけ（デスクトップ版と同じ形）</span>
           </span>
           <span class="chev"><ChevronRight /></span>
         </button>

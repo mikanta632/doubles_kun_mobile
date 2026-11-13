@@ -2,19 +2,17 @@ import { useMemo } from "preact/hooks";
 import type { ViewProps } from "../app";
 import { countPlays } from "../core/dayEngine";
 import type { Player } from "../core/models";
-import { attendingPlayers, playedIn, setLate } from "../store";
+import { attendingPlayers, setLate } from "../store";
 import { HistorySection } from "./PlayerEditSheet";
-import { toggleMember } from "./ProjectSheets";
 import { Sheet } from "./Sheet";
 
 /**
- * メンバータブで名前をタップしたときのシート。プロジェクト側からはデータベースの人を変えない：
- * 名前・所属・レート・休会の変更や削除はできず（設定 → メンバーのデータベースで行う）、名簿から外すことだけできる。
- * このプロジェクトでの「遅れて来た」（仮の試合数）もここで決める。
+ * メンバータブで名前をタップしたときのシート。記録を見て、このプロジェクトでの「遅れて来た」（仮の試合数）を決める。
+ * データベースの人（名前・所属・レート・休会）はここでは変えない（設定 → メンバーのデータベース）。
+ * メンバーから外すのはプロジェクトの編集で行う。
  */
 export function MemberSheet(props: ViewProps & { player: Player; onClose: () => void }) {
   const { state, project, player, updateProject, onClose } = props;
-  const playedHere = playedIn(project, player.name);
   const late = project.late[player.name];
 
   // ほかの参加者の出場回数（仮の試合数を含む）の最少。遅れて来た人をここに合わせると、その人ばかり入らない
@@ -27,11 +25,6 @@ export function MemberSheet(props: ViewProps & { player: Player; onClose: () => 
   const actual = useMemo(() => countPlays([player], project.matches).get(player.name) ?? 0, [player, project.matches]);
   // 実際の出場と合わせて最少に届く数
   const suggest = Math.max(0, othersMin - actual);
-
-  const remove = () => {
-    toggleMember(props, player.name);
-    onClose();
-  };
 
   const set = (plays: number | null) => updateProject((p) => setLate(p, player.name, plays));
 
@@ -78,10 +71,7 @@ export function MemberSheet(props: ViewProps & { player: Player; onClose: () => 
       </section>
 
       <HistorySection state={state} project={project} name={player.name} />
-      <button class="btn block" onClick={remove} disabled={playedHere}>
-        {playedHere ? "試合に出ているので名簿から外せません" : "このプロジェクトの名簿から外す"}
-      </button>
-      <div class="foot">名前・所属・レートの変更や削除は、設定の「メンバーのデータベース」で行います。</div>
+      <div class="foot">メンバーから外すのはプロジェクトの編集で、名前・所属・レートの変更は設定の「メンバーのデータベース」で行います。</div>
       <div class="actions">
         <span class="grow" />
         <button class="btn tall" onClick={onClose}>閉じる</button>

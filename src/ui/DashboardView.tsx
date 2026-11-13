@@ -32,7 +32,7 @@ function Kpi({ c }: { c: Card }) {
 
 export function DashboardView({ state, project, go }: ViewProps) {
   const [seg, setSeg] = useState<Seg>("ranking");
-  // 連続待ちの上限は、名簿全員ではなく今日の参加人数で決める（エンジンと同じ）
+  // 連続待ちの上限は、メンバー全員ではなく組み合わせに入れる人数で決める（エンジンと同じ）
   const hide = state.prefs.hide_ratings;
   const d = useMemo(() => {
     // 遅れて来た人の連続待ちは来た時点から数える（試合タブと同じ）
@@ -54,8 +54,8 @@ export function DashboardView({ state, project, go }: ViewProps) {
       <>
         <header class="head"><h1>集計</h1></header>
         <div class="panel empty">
-          名簿がありません。
-          <div><button class="btn primary" onClick={() => go("members")}>メンバーを追加</button></div>
+          メンバーがいません。
+          <div><button class="btn primary" onClick={() => go("members")}>メンバーを選ぶ</button></div>
         </div>
       </>
     );

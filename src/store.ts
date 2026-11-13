@@ -5,9 +5,10 @@
  *
  * メンバーは 3 層に分ける:
  *   1. データベース（db）      … この端末に登録した全プレイヤー。プロジェクトをまたいで共有する
- *   2. 名簿（members）        … データベースから選んだ、このプロジェクトに来ている人
- *   3. 試合に入れる人（selected） … 名簿のうち、次の試合の候補にする人
- * 集計は名簿の人だけを対象にする。
+ *   2. 名簿（members）        … データベースから選んだ、このプロジェクトの参加者。プロジェクトの作成・編集で決める
+ *   3. 組み合わせに入れる人（selected） … 名簿のうち、次の試合の候補にする人。
+ *      外すのは「その場にいるが組み合わせから外す人」だけ（来ていない人は名簿に入れない）
+ * 集計は名簿の人だけを対象にする（名簿にいない人は、そのプロジェクトでは集計にも組み合わせにも出てこない）。
  *
  * プロジェクトは複数持てる。試合・設定・名簿はプロジェクトごと、データベースは共通。
  *
@@ -320,6 +321,22 @@ export function setLate(p: Project, name: string, plays: number | null): Project
   if (plays === null) delete late[name];
   else late[name] = { plays: Math.max(0, Math.round(plays)), at: p.late[name]?.at ?? p.matches.length };
   return { ...p, late };
+}
+
+/**
+ * プロジェクトのメンバー（名簿）を names にする。プロジェクトの作成・編集から使う。
+ * 並びは今までの順を保ち、新しい人は後ろに足す。新しく入れた人は組み合わせにも入れる（休会中の人は除く）。
+ * 外した人は組み合わせ・遅れて来たの記録からも外す。このプロジェクトの試合に出ている人は外さない。
+ */
+export function setRoster(p: Project, names: readonly string[], active: ReadonlySet<string>): Project {
+  const want = new Set(names);
+  for (const n of p.members) if (playedIn(p, n)) want.add(n);
+  const kept = p.members.filter((n) => want.has(n));
+  const added = [...want].filter((n) => !p.members.includes(n));
+  const removed = p.members.filter((n) => !want.has(n));
+  const members = [...kept, ...added];
+  const selected = [...p.selected.filter((n) => want.has(n)), ...added.filter((n) => active.has(n))];
+  return { ...p, members, selected, late: dropLate(p.late, removed) };
 }
 
 /**
