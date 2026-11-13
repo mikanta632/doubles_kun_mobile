@@ -119,8 +119,17 @@ input[type="text"], input[type="number"], input[type="date"], input[type="search
   font-size: 16px;
 }
 input[type="number"] { text-align: right; font-family: var(--mono); }
+/*
+ * iPhone の日付欄は、中身の幅より狭くならず width: 100% を無視して隣の欄に重なる。
+ * 見た目の既定を外して幅に従わせ、中の日付も左に寄せる
+ */
+input[type="date"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; text-align: left; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); flex: none; }
-.field { display: flex; flex-direction: column; gap: 4px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > input, .field > select { min-width: 0; max-width: 100%; }
+/* 2 つの欄を横に並べる（日付と場所など）。1 つあたり 150px 取れない狭い画面では縦に並べる */
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
 .field > span { font-size: 12px; color: var(--muted); }
 .search {
   display: flex; align-items: center; gap: 8px;

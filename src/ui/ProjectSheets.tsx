@@ -111,7 +111,7 @@ function ProjectEditSheet({ project, update, updateProject, notify, onMembers, o
         <span>名前</span>
         <input type="text" value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
       </label>
-      <div class="row">
+      <div class="pair">
         <label class="field grow">
           <span>日付</span>
           <input type="date" value={date} onChange={(e) => setDate((e.target as HTMLInputElement).value)} />
@@ -170,7 +170,7 @@ function NewProjectSheet(props: ViewProps & { onClose: () => void; onDone: () =>
         <span>名前</span>
         <input type="text" placeholder="例: 2026年度春秋杯" value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === "Enter" && create()} />
       </label>
-      <div class="row">
+      <div class="pair">
         <label class="field grow">
           <span>日付</span>
           <input type="date" value={date} onChange={(e) => setDate((e.target as HTMLInputElement).value)} />
