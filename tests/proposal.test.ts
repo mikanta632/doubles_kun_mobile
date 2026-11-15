@@ -2,11 +2,11 @@
  * 「次の試合を組む」の候補（試合中の人を外す）と、連続ラウンドの回避。
  */
 import { describe, expect, it } from "vitest";
-import { GoodDayEngine, countPlays } from "../src/core/dayEngine";
+import { GoodDayEngine, countPlays, notesOf } from "../src/core/dayEngine";
 import { DEFAULT_CONFIG } from "../src/core/config";
 import { PyRandom } from "../src/core/rng";
 import { newMatch, newPlayer, type Match, type Player } from "../src/core/models";
-import { newProject, proposalPool, type Project } from "../src/store";
+import { newProject, proposalPool, restRounds, type Project } from "../src/store";
 
 const people = (n: number): Player[] => Array.from({ length: n }, (_, i) => newPlayer(String.fromCharCode(65 + i), 1500));
 const m = (names: string, state: "queued" | "play" | "done" = "queued"): Match => {
@@ -97,6 +97,26 @@ describe("連続ラウンドの回避", () => {
     const best = e.generateCandidates()[0];
     expect(best.consecutive).toBe(0);
     expect([...best.four].some((n) => "EFGH".includes(n))).toBe(false);
+  });
+
+  it("避けられない人数の「続けて出る人」は気になる点に出さない", () => {
+    // 10 人 2 面: R1 の 8 人のうち、次のラウンドでは少なくとも 2 人が続けて出る
+    const e = propose(people(10), [m("ABCD", "done"), m("EFGH", "done")], 2, true);
+    const cands = e.generateCandidates();
+    const min = Math.min(...e.lastCandidates.map((c) => c.consecutive));
+    expect(min).toBe(2);
+    expect(notesOf(cands[0], min)).not.toContain("続けて出る人 2 人");
+    const worse = e.lastCandidates.find((c) => c.consecutive === 4)!;
+    expect(notesOf(worse, min)).toContain("続けて出る人 4 人");
+  });
+
+  it("出番待ちの連続待ち（restRounds）はエンジンの waitedRounds と同じ", () => {
+    const ps = people(10);
+    const past = [m("ABCD", "done"), m("EFGH", "done"), m("ABEF", "done"), m("CDIJ", "play"), m("ABGH")];
+    const e = propose(ps, past, 2, true);
+    for (const p of ps) expect(restRounds(past, p.name, past.length, 2), p.name).toBe(e.ledger.waitedRounds(p.name));
+    // 待機の試合（#5, R3）に入っている人は、その試合までの休み
+    expect(restRounds(past, "G", 4, 2)).toBe(1);
   });
 
   it("attending を渡すと、候補から外した人も出席者として数える（連続待ちの上限が縮まない）", () => {

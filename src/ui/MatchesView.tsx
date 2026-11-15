@@ -1,10 +1,9 @@
 import { useMemo, useState } from "preact/hooks";
 import type { ViewProps } from "../app";
-import { GoodDayEngine, countPlays, notesOf } from "../core/dayEngine";
+import { GoodDayEngine, countPlays, notesOf, waitCapFor } from "../core/dayEngine";
 import { pairingToMatch, type Match, type MatchPairing, type MatchResult } from "../core/models";
 import { gameWinProb, pairStrength } from "../core/winModel";
-import { buildDashboard } from "../dashboard";
-import { attendingPlayers, deleteMatches, lateMaps, memberPlayers, proposalPool, type Project } from "../store";
+import { attendingPlayers, deleteMatches, lateMaps, memberPlayers, proposalPool, restRounds, type Project } from "../store";
 import { CheckIcon, ChevronDown, ChevronLeft, ChevronRight, LayersIcon, NoteIcon, PlusIcon } from "./icons";
 import { MatchDetailSheet } from "./MatchDetailSheet";
 import { PlanSheet } from "./PlanSheet";
@@ -66,17 +65,20 @@ export function MatchesView(props: ViewProps) {
         : "同じラウンドの試合に入っている人を除くと 4 人未満です";
 
   // 出番待ちの人：コートに入っていない、組み合わせに入れる人。
-  // 待機の試合も決まった試合として数える（連続で休むラウンドは、待機の試合が終わった時点まで）
+  // 数字は「次の試合までに連続で休むラウンド」。待機の試合も決まった試合として数え、
+  // 待機に入っていればその試合まで、入っていなければ次に組む試合（待機の最後）まで（エンジンと同じ数え方）
   // 連続待ちの上限は、メンバー全員ではなく組み合わせに入れる人数で決める（エンジンと同じ）
   const late = useMemo(() => lateMaps(project), [project]);
-  const dash = useMemo(() => buildDashboard(members, project.matches, project.config, { attending: attending.length, joined: late.joined }), [members, project.matches, project.config, attending.length, late]);
-  const waitOf = useMemo(() => new Map(dash.people.rows.map((r) => [r.name, r.current_wait])), [dash]);
-  const waitCap = dash.people.meta.wait_cap;
+  const waitCap = waitCapFor(project.config, attending.length, courts);
   const playing = new Set(inPlay.flatMap((m) => [...m.team_a, ...m.team_b]));
   const nextOf = (name: string) => queued.find((m) => m.team_a.includes(name) || m.team_b.includes(name));
   const resting = attending
     .filter((p) => !playing.has(p.name))
-    .map((p) => ({ name: p.name, wait: waitOf.get(p.name) ?? 0, next: nextOf(p.name) }))
+    .map((p) => {
+      const next = nextOf(p.name);
+      const upto = next ? noOf.get(next.id)! - 1 : project.matches.length;
+      return { name: p.name, wait: restRounds(project.matches, p.name, upto, courts, late.joined.get(p.name)), next };
+    })
     .sort((a, b) => b.wait - a.wait || (a.next ? noOf.get(a.next.id)! : Infinity) - (b.next ? noOf.get(b.next.id)! : Infinity));
   const longWait = (w: number) => w > 0 && w >= Math.max(1, waitCap - 1);
 
@@ -108,7 +110,9 @@ export function MatchesView(props: ViewProps) {
     }
     // 長く休んでいる人の表示は、エンジンと同じ数え方（待機の試合も含めて、新しい試合の時点まで）
     const waits = new Map(candidates.map((p) => [p.name, engine.ledger.waitedRounds(p.name)]));
-    setProposal({ pairings: cands.map((c) => c.match), notes: cands.map(notesOf), index: 0, waits });
+    // 続けて出る人は、どの案でも避けられない人数を超えたときだけ「気になる点」に出す
+    const minConsecutive = Math.min(...engine.lastCandidates.map((c) => c.consecutive));
+    setProposal({ pairings: cands.map((c) => c.match), notes: cands.map((c) => notesOf(c, minConsecutive)), index: 0, waits });
   };
 
   const adopt = () => {
@@ -273,7 +277,7 @@ export function MatchesView(props: ViewProps) {
 
           {resting.length > 0 && (
             <section class="section">
-              <div class="section-h"><h2>出番待ちの人 <span class="mono">{resting.length}</span></h2><span class="note">待機の試合まで含めて連続で休むラウンド → 次の試合</span></div>
+              <div class="section-h"><h2>出番待ちの人 <span class="mono">{resting.length}</span></h2><span class="note">次の試合まで連続で休むラウンド → 次の試合</span></div>
               <div class="chips">
                 {resting.map((w) => (
                   <span class={"chip" + (longWait(w.wait) ? " long" : "")} key={w.name}>

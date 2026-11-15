@@ -189,11 +189,13 @@ export interface DayCandidate {
 /**
  * 優先順位の上位キー。全く同じ組み合わせの再現を最初に見る（他に候補がある限り選ばない）。
  * restKey は avoidConsecutive が無効なら入らないので、デスクトップ版と同じ順位・先読みの点数になる。
+ * 有効なときは restKey の前に「出場回数の差が 3 以上に開くか」を置く（restKey を上げたぶん、
+ * 出場回数の公平さより連続の回避が勝って差が開くのを防ぐ。差 2 までは連続の回避を優先する）。
  */
 export function tier(c: DayCandidate): number[] {
   const heavy = c.level >= HEAVY_RELAX_LEVEL ? 1 : 0;
   const t = [c.exactRepeat, c.repeatMax, c.repeatExcess, heavy, c.pairRepeat, c.imbalance, c.recent, c.level];
-  if (c.restKey !== null) t.splice(1, 0, c.restKey);
+  if (c.restKey !== null) t.splice(1, 0, Math.max(0, c.imbalance - 1), c.restKey);
   return t;
 }
 
@@ -218,7 +220,7 @@ function relaxed(c: DayCandidate): string[] {
  * 候補が諦めた点を、エンジンの用語を使わずに並べる（重い順）。
  * 何も諦めていなければ空。画面ではこれが出ていなければ「ふつうの組み合わせ」。
  */
-export function notesOf(c: DayCandidate): string[] {
+export function notesOf(c: DayCandidate, minConsecutive = 0): string[] {
   const r = new Set(relaxed(c));
   const out: string[] = [];
   if (r.has("must_include")) out.push("長く待っている人が入らない");
@@ -227,7 +229,8 @@ export function notesOf(c: DayCandidate): string[] {
   if (r.has("band_strict") || r.has("band_wide")) out.push("実力差あり");
   if (c.exactRepeat) out.push("同じ組み合わせ");
   if (c.sameTeam) out.push("同じ所属のペアあり");
-  if (c.consecutive) out.push(`続けて出る人 ${c.consecutive} 人`);
+  // 人数の都合で避けられない分（どの案でも続けて出る人数 = minConsecutive）は出さない
+  if (c.consecutive > minConsecutive) out.push(`続けて出る人 ${c.consecutive} 人`);
   return out;
 }
 

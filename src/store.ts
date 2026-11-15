@@ -409,6 +409,21 @@ export function proposalPool(p: Project, attending: readonly Player[], courts: n
   };
 }
 
+/**
+ * upto 番目（0 始まり）の試合の時点で、その人が連続で休んでいるラウンド数。
+ * それより前の試合（待機の試合も含む）に最後に出たラウンドから数える。ラウンドは matches の並びと面数で決まる。
+ * 遅れて来た人は来たラウンドから数える（joinedAt は来た時点の試合数）。エンジンの waitedRounds と同じ数え方
+ */
+export function restRounds(matches: readonly Match[], name: string, upto: number, courts: number, joinedAt?: number): number {
+  const c = Math.max(1, courts);
+  let last = joinedAt === undefined ? -1 : Math.floor(joinedAt / c) - 1;
+  for (let i = 0; i < upto; i++) {
+    const m = matches[i];
+    if (m.team_a.includes(name) || m.team_b.includes(name)) last = Math.max(last, Math.floor(i / c));
+  }
+  return Math.max(0, Math.floor(upto / c) - last - 1);
+}
+
 export function playedIn(p: Project, name: string): boolean {
   return p.matches.some((m) => m.team_a.includes(name) || m.team_b.includes(name));
 }
