@@ -99,8 +99,6 @@ export function MatchesView(props: ViewProps) {
       joined: late.joined,
       // 候補から外した人（試合中・同じラウンド）も出席者として数える（連続待ち・同席回数の上限が縮まないように）
       attending,
-      // 前のラウンドに出た人（待機の試合も含む）をなるべく続けて入れない
-      avoidConsecutive: true,
     });
     const cands = engine.generateCandidates(project.settings.rating_match, project.settings.avoid_same_team);
     if (cands.length === 0) {

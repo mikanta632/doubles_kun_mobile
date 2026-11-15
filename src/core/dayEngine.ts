@@ -1,15 +1,15 @@
 /**
- * 「良い一日」を目指すマッチングエンジン（デスクトップ版 day_engine.py の移植）。
+ * 「良い一日」を目指すマッチングエンジン（もとはデスクトップ版 day_engine.py の移植。デスクトップ版はもう使わない）。
  *
  * 参加者一人ひとりについて「出場回数が公平」「長く待たない」「大差の試合がない」
- * 「いろいろな人と組み・当たる」「同じ人と続けて同席しない」を満たすことを目標にする。
+ * 「いろいろな人と組み・当たる」「同じ人と続けて同席しない」「続けてラウンドに入らない」を満たすことを目標にする。
  *
  * 1. 台帳 (DayLedger): 人ごと・2 人組ごとの履歴
  * 2. フィルタ: 公平性・接戦・保護をしきい値で判定。全滅したら決まった順に緩める
  * 3. スコア: 通った候補を多様性だけで採点する
  * 4. 同点処理: 期待勝率が 50% に近いもの、次に乱数
  *
- * 計算順・乱数の消費順は Python 版と同じにしてある（正解データで一致を確認）。
+ * 結果は tests/golden の正解データ（回帰用。tools/update_golden.ts で作り直す）で確かめている。
  */
 
 import type { EngineConfig } from "./config";
@@ -171,32 +171,30 @@ export interface DayCandidate {
   exactRepeat: number;
   /** 同じ所属どうしのペアの数（0〜2） */
   sameTeam: number;
-  /** 4 人のうち、前のラウンド（か同じラウンド）に出た人の数（待機の試合も含む）。avoidConsecutive が無効なら 0 */
+  /** 4 人のうち、前のラウンド（か同じラウンド）に出た人の数（待機の試合も含む） */
   consecutive: number;
-  /** 同じ 4 人が過去に揃った回数（avoidConsecutive が無効なら 0） */
+  /** 同じ 4 人が過去に揃った回数 */
   sameFour: number;
   /**
-   * 連続ラウンドを避けるときの上位キー: consecutive + repeatMax + sameFour。avoidConsecutive が無効なら null。
+   * 連続ラウンドを避ける上位キー: consecutive + repeatMax + sameFour。
    * 続けて出る 1 人を「同席回数の最大が 1 増える」のと同じ重さで見る。consecutive だけを最上位にすると、
    * 人数がちょうど面数 × 8 のとき（8 人 1 面・16 人 2 面）休んだ人どうしで組み続け、同じ顔ぶれに固まる。
    * sameFour は 8 人 1 面で同じ 4 人が交互に固まるのを崩すため（同席回数の最大はどの 4 人でも同じになる）
    */
-  restKey: number | null;
+  restKey: number;
   level: number;
   planScore: number | null;
 }
 
 /**
  * 優先順位の上位キー。全く同じ組み合わせの再現を最初に見る（他に候補がある限り選ばない）。
- * restKey は avoidConsecutive が無効なら入らないので、デスクトップ版と同じ順位・先読みの点数になる。
- * 有効なときは restKey の前に「出場回数の差が 3 以上に開くか」を置く（restKey を上げたぶん、
+ * restKey の前に「出場回数の差が 3 以上に開くか」を置く（restKey を上げたぶん、
  * 出場回数の公平さより連続の回避が勝って差が開くのを防ぐ。差 2 までは連続の回避を優先する）。
+ * restKey が同点なら、同席の重なりより先に出場回数の差を見る（遅れて来た人が同席の少なさで選ばれ続けないように）。
  */
 export function tier(c: DayCandidate): number[] {
   const heavy = c.level >= HEAVY_RELAX_LEVEL ? 1 : 0;
-  const t = [c.exactRepeat, c.repeatMax, c.repeatExcess, heavy, c.pairRepeat, c.imbalance, c.recent, c.level];
-  if (c.restKey !== null) t.splice(1, 0, Math.max(0, c.imbalance - 1), c.restKey);
-  return t;
+  return [c.exactRepeat, Math.max(0, c.imbalance - 1), c.restKey, c.imbalance, c.repeatMax, c.repeatExcess, heavy, c.pairRepeat, c.recent, c.level];
 }
 
 function sortKey(c: DayCandidate): number[] {
@@ -265,11 +263,6 @@ export interface EngineOptions {
    * 実力帯の境界はこれで数える。省略時は players + 進行中の試合の人
    */
   attending?: readonly Player[];
-  /**
-   * 前のラウンドに出た人をなるべく続けて入れない（優先順位の上位キーにする）。
-   * デスクトップ版にはない機能なので既定は無効（正解データとの一致を保つ）
-   */
-  avoidConsecutive?: boolean;
 }
 
 export class GoodDayEngine {
@@ -296,7 +289,6 @@ export class GoodDayEngine {
   /** 出席者数（出場候補 + いまコートに入っている人） */
   nAttending: number;
   cutoffs: number[];
-  avoidConsecutive: boolean;
   lastCandidates: DayCandidate[] = [];
 
   constructor(players: readonly Player[], pastMatches: readonly Match[] = [], opts: EngineOptions = {}) {
@@ -315,7 +307,6 @@ export class GoodDayEngine {
     // 同席回数）と実力帯の境界はこれで数える。候補だけで数えると、コートが
     // 使用中のあいだ人数が減って上限が急に下がる（10人2面で 4 → 1）。
     // attending を渡されたらそれを使う（同じラウンドの待機に入っている人など、候補から外した人も数える）
-    this.avoidConsecutive = opts.avoidConsecutive ?? false;
     for (const p of opts.attending ?? []) if (!this.ratingOf.has(p.name)) this.ratingOf.set(p.name, p.rating);
     const attending = new Set(this.players.map((p) => p.name));
     if (opts.attending) for (const p of opts.attending) attending.add(p.name);
@@ -609,16 +600,12 @@ export class GoodDayEngine {
         [p0, p3, p1, p2],
       ];
 
-      // 連続ラウンドの回避（無効なら何も数えない。乱数も使わない）
+      // 連続ラウンドの回避。前のラウンド（か同じラウンド）に出た人を数える（待機の試合も出たものとして数える）
       let consecutive = 0;
+      for (const nm of names) if ((this.ledger.lastPlayedRound.get(nm) ?? -2) >= this.ledger.round - 1) consecutive++;
       let sameFour = 0;
-      let restKey: number | null = null;
-      if (this.avoidConsecutive) {
-        // 前のラウンド（か同じラウンド）に出た人。待機の試合も出たものとして数える
-        for (const nm of names) if ((this.ledger.lastPlayedRound.get(nm) ?? -2) >= this.ledger.round - 1) consecutive++;
-        for (const [a1, a2, b1, b2] of splits) sameFour += this.ledger.matchCount.get(matchKey([a1.name, a2.name], [b1.name, b2.name])) ?? 0;
-        restKey = consecutive + repeatMax + sameFour;
-      }
+      for (const [a1, a2, b1, b2] of splits) sameFour += this.ledger.matchCount.get(matchKey([a1.name, a2.name], [b1.name, b2.name])) ?? 0;
+      const restKey = consecutive + repeatMax + sameFour;
 
       for (const [a1, a2, b1, b2] of splits) {
         // 同じ所属どうしのペアは捨てずに減点する（なるべく避ける）

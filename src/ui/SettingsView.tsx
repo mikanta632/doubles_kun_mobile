@@ -36,7 +36,7 @@ export function SettingsView(props: ViewProps) {
         }
         notify(`プロジェクト「${imp.project.name}」を読み込みました（メンバー ${imp.project.members.length} 人・${imp.project.matches.length} 試合）。`);
       } else if (imp.kind === "players") {
-        // players.json はデスクトップ版のプロジェクトのメンバー。データベースに足し、このプロジェクトのメンバーに入れる
+        // players.json はプロジェクトのメンバー（以前のデスクトップ版の形式）。データベースに足し、このプロジェクトのメンバーに入れる
         update((s) => {
           const merged = mergePlayers(s, imp.players);
           return updateCurrent(merged, (p) => {
@@ -144,7 +144,7 @@ export function SettingsView(props: ViewProps) {
           <button class="lrow" onClick={() => fileRef.current?.click()}>
             <span class="body">
               <span>読み込む</span>
-              <span class="sub">デスクトップ版の JSON にも対応</span>
+              <span class="sub">書き出した JSON・players.json・matches.json</span>
             </span>
             <span class="chev"><ChevronRight /></span>
           </button>
@@ -197,14 +197,14 @@ function ExportSheet({ state, project, onClose }: ViewProps & { onClose: () => v
         <button class="lrow" onClick={() => downloadText("players.json", playersJson(state, project))}>
           <span class="body">
             <span class="mono">players.json</span>
-            <span class="sub">メンバーだけ（デスクトップ版と同じ形）</span>
+            <span class="sub">メンバーだけ</span>
           </span>
           <span class="chev"><ChevronRight /></span>
         </button>
         <button class="lrow" onClick={() => downloadText("matches.json", matchesJson(project))}>
           <span class="body">
             <span class="mono">matches.json</span>
-            <span class="sub">試合だけ（デスクトップ版と同じ形）</span>
+            <span class="sub">試合だけ</span>
           </span>
           <span class="chev"><ChevronRight /></span>
         </button>

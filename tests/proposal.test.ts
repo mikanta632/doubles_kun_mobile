@@ -61,7 +61,7 @@ describe("proposalPool", () => {
 });
 
 describe("連続ラウンドの回避", () => {
-  const propose = (players: Player[], matches: Match[], courts: number, avoid: boolean, attending?: Player[]) =>
+  const propose = (players: Player[], matches: Match[], courts: number, attending?: Player[]) =>
     new GoodDayEngine(players, matches, {
       config: { ...DEFAULT_CONFIG, courts },
       courts,
@@ -69,19 +69,14 @@ describe("連続ラウンドの回避", () => {
       rng: new PyRandom(1),
       plays: countPlays(players, matches),
       attending,
-      avoidConsecutive: avoid,
     });
 
-  it("無効なら consecutive はいつも 0（デスクトップ版と同じ順位）", () => {
-    const e = propose(people(9), [m("ABCD", "done")], 1, false);
-    expect(e.generateCandidates().every((c) => c.consecutive === 0 && c.restKey === null)).toBe(true);
-  });
 
   it("8 人 1 面でも、休んだ 4 人どうしに固まらない（いろいろな人と同席する）", () => {
     const ps = people(8);
     const matches: Match[] = [];
     for (let i = 0; i < 10; i++) {
-      const best = propose(ps, matches, 1, true).generateCandidates()[0];
+      const best = propose(ps, matches, 1).generateCandidates()[0];
       const [[a1, a2], [b1, b2]] = best.match;
       matches.push(m(a1.name + a2.name + b1.name + b2.name, "done"));
     }
@@ -93,7 +88,7 @@ describe("連続ラウンドの回避", () => {
   it("有効なら、前のラウンドに出た人をなるべく入れない（待機の試合も出たものとして数える）", () => {
     const ps = people(9);
     // 1 面: ABCD 終了・EFGH 待機。次は EFGH の直後なので、EFGH 以外の 5 人から 4 人
-    const e = propose(ps, [m("ABCD", "done"), m("EFGH")], 1, true);
+    const e = propose(ps, [m("ABCD", "done"), m("EFGH")], 1);
     const best = e.generateCandidates()[0];
     expect(best.consecutive).toBe(0);
     expect([...best.four].some((n) => "EFGH".includes(n))).toBe(false);
@@ -101,7 +96,7 @@ describe("連続ラウンドの回避", () => {
 
   it("避けられない人数の「続けて出る人」は気になる点に出さない", () => {
     // 10 人 2 面: R1 の 8 人のうち、次のラウンドでは少なくとも 2 人が続けて出る
-    const e = propose(people(10), [m("ABCD", "done"), m("EFGH", "done")], 2, true);
+    const e = propose(people(10), [m("ABCD", "done"), m("EFGH", "done")], 2);
     const cands = e.generateCandidates();
     const min = Math.min(...e.lastCandidates.map((c) => c.consecutive));
     expect(min).toBe(2);
@@ -113,7 +108,7 @@ describe("連続ラウンドの回避", () => {
   it("出番待ちの連続待ち（restRounds）はエンジンの waitedRounds と同じ", () => {
     const ps = people(10);
     const past = [m("ABCD", "done"), m("EFGH", "done"), m("ABEF", "done"), m("CDIJ", "play"), m("ABGH")];
-    const e = propose(ps, past, 2, true);
+    const e = propose(ps, past, 2);
     for (const p of ps) expect(restRounds(past, p.name, past.length, 2), p.name).toBe(e.ledger.waitedRounds(p.name));
     // 待機の試合（#5, R3）に入っている人は、その試合までの休み
     expect(restRounds(past, "G", 4, 2)).toBe(1);
@@ -123,7 +118,7 @@ describe("連続ラウンドの回避", () => {
     const all = people(10);
     const cands = all.slice(4);
     const past = [m("ABCD")];
-    expect(propose(cands, past, 2, true).waitCap()).toBe(1);
-    expect(propose(cands, past, 2, true, all).waitCap()).toBe(4);
+    expect(propose(cands, past, 2).waitCap()).toBe(1);
+    expect(propose(cands, past, 2, all).waitCap()).toBe(4);
   });
 });

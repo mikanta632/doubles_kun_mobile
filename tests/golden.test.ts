@@ -1,6 +1,7 @@
 /**
- * デスクトップ版（Python）が書き出した正解データと突き合わせる。
- * tools/make_golden.py を Python 側で実行すると tests/golden/*.json が更新される。
+ * 正解データ（回帰用）と突き合わせる。もとはデスクトップ版（Python）が書き出したもので、
+ * デスクトップ版はもう使わない。組み合わせエンジンの提案（day_engine.json）は、決め方を意図して変えたら
+ * npm run golden（tools/update_golden.ts）で作り直す。ほかは固定。
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
