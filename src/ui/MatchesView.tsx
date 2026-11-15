@@ -127,6 +127,12 @@ export function MatchesView(props: ViewProps) {
     if (inPlay.length >= courts) notify(`進行中が ${inPlay.length + 1} 試合になりました（${courts} 面）。`);
   };
 
+  /** 開始した試合を待機に戻す（間違えて開始したときなど）。試合の並びは変えないので、待機の中では元の順番の位置に入る */
+  const unstart = (m: Match) => {
+    updateProject((p) => ({ ...p, matches: p.matches.map((x) => (x.id === m.id ? { ...x, in_play: false, updated_at: Date.now() / 1000 } : x)) }));
+    notify(`試合 #${noOf.get(m.id)} を待機に戻しました。`);
+  };
+
   /**
    * 一部の試合（待機だけ・終了だけ）の順番を入れ替える。ほかの試合の位置はそのままで、
    * その試合たちがいた位置に新しい順で入れ直す。順番は Elo の再計算とラウンドの数え方にも効く
@@ -340,6 +346,7 @@ export function MatchesView(props: ViewProps) {
           courts={courts}
           onResult={() => setEditing(detail)}
           onStart={() => start(detail)}
+          onUnstart={() => unstart(detail)}
           onClose={() => setDetailId(null)}
         />
       )}

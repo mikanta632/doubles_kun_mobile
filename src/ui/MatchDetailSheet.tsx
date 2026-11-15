@@ -8,11 +8,11 @@ import { Sheet } from "./Sheet";
 
 /**
  * 試合タブで試合をタップしたときの詳細。勝率予想・4 人のレートと出場回数・結果を出し、
- * ここから開始・結果の入力・削除ができる。
+ * ここから開始・待機に戻す・結果の入力・削除ができる。
  * 勝率予想はいまのレートで計算する（レートは固定値）。レートを隠す設定なら、レートも勝率も出さない。
  */
-export function MatchDetailSheet(props: ViewProps & { match: Match; courts: number; onResult: () => void; onStart: () => void; onClose: () => void }) {
-  const { state, project, match, courts, updateProject, notify, onResult, onStart, onClose } = props;
+export function MatchDetailSheet(props: ViewProps & { match: Match; courts: number; onResult: () => void; onStart: () => void; onUnstart: () => void; onClose: () => void }) {
+  const { state, project, match, courts, updateProject, notify, onResult, onStart, onUnstart, onClose } = props;
   const hide = state.prefs.hide_ratings;
   const no = project.matches.findIndex((m) => m.id === match.id) + 1;
   const round = Math.floor((no - 1) / courts) + 1;
@@ -93,6 +93,7 @@ export function MatchDetailSheet(props: ViewProps & { match: Match; courts: numb
         <button class="btn danger tall" onClick={remove}>削除</button>
         <span class="grow" />
         {status === "待機" && <button class="btn tall" onClick={() => { onStart(); onClose(); }}>開始</button>}
+        {status === "進行中" && <button class="btn tall" onClick={() => { onUnstart(); onClose(); }}>待機に戻す</button>}
         <button class="btn primary tall" onClick={onResult}>{match.result === null ? "結果を入力" : "結果を直す"}</button>
       </div>
     </Sheet>
