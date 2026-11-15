@@ -171,14 +171,30 @@ export interface DayCandidate {
   exactRepeat: number;
   /** 同じ所属どうしのペアの数（0〜2） */
   sameTeam: number;
+  /** 4 人のうち、前のラウンド（か同じラウンド）に出た人の数（待機の試合も含む）。avoidConsecutive が無効なら 0 */
+  consecutive: number;
+  /** 同じ 4 人が過去に揃った回数（avoidConsecutive が無効なら 0） */
+  sameFour: number;
+  /**
+   * 連続ラウンドを避けるときの上位キー: consecutive + repeatMax + sameFour。avoidConsecutive が無効なら null。
+   * 続けて出る 1 人を「同席回数の最大が 1 増える」のと同じ重さで見る。consecutive だけを最上位にすると、
+   * 人数がちょうど面数 × 8 のとき（8 人 1 面・16 人 2 面）休んだ人どうしで組み続け、同じ顔ぶれに固まる。
+   * sameFour は 8 人 1 面で同じ 4 人が交互に固まるのを崩すため（同席回数の最大はどの 4 人でも同じになる）
+   */
+  restKey: number | null;
   level: number;
   planScore: number | null;
 }
 
-/** 優先順位の上位キー。全く同じ組み合わせの再現を最初に見る（他に候補がある限り選ばない） */
+/**
+ * 優先順位の上位キー。全く同じ組み合わせの再現を最初に見る（他に候補がある限り選ばない）。
+ * restKey は avoidConsecutive が無効なら入らないので、デスクトップ版と同じ順位・先読みの点数になる。
+ */
 export function tier(c: DayCandidate): number[] {
   const heavy = c.level >= HEAVY_RELAX_LEVEL ? 1 : 0;
-  return [c.exactRepeat, c.repeatMax, c.repeatExcess, heavy, c.pairRepeat, c.imbalance, c.recent, c.level];
+  const t = [c.exactRepeat, c.repeatMax, c.repeatExcess, heavy, c.pairRepeat, c.imbalance, c.recent, c.level];
+  if (c.restKey !== null) t.splice(1, 0, c.restKey);
+  return t;
 }
 
 function sortKey(c: DayCandidate): number[] {
@@ -211,6 +227,7 @@ export function notesOf(c: DayCandidate): string[] {
   if (r.has("band_strict") || r.has("band_wide")) out.push("実力差あり");
   if (c.exactRepeat) out.push("同じ組み合わせ");
   if (c.sameTeam) out.push("同じ所属のペアあり");
+  if (c.consecutive) out.push(`続けて出る人 ${c.consecutive} 人`);
   return out;
 }
 
@@ -240,6 +257,16 @@ export interface EngineOptions {
   plays?: Map<string, number>;
   /** 遅れて来た人 → 来た時点の試合数。連続待ちをそこから数える */
   joined?: ReadonlyMap<string, number>;
+  /**
+   * 出席者（いまは組めない人も含めた、今日試合に入れる全員）。人数から決まる上限（連続待ち・同席回数）と
+   * 実力帯の境界はこれで数える。省略時は players + 進行中の試合の人
+   */
+  attending?: readonly Player[];
+  /**
+   * 前のラウンドに出た人をなるべく続けて入れない（優先順位の上位キーにする）。
+   * デスクトップ版にはない機能なので既定は無効（正解データとの一致を保つ）
+   */
+  avoidConsecutive?: boolean;
 }
 
 export class GoodDayEngine {
@@ -266,6 +293,7 @@ export class GoodDayEngine {
   /** 出席者数（出場候補 + いまコートに入っている人） */
   nAttending: number;
   cutoffs: number[];
+  avoidConsecutive: boolean;
   lastCandidates: DayCandidate[] = [];
 
   constructor(players: readonly Player[], pastMatches: readonly Match[] = [], opts: EngineOptions = {}) {
@@ -283,8 +311,12 @@ export class GoodDayEngine {
     // 出席者 = 出場候補 + いまコートに入っている人。人数から決まる上限（連続待ち・
     // 同席回数）と実力帯の境界はこれで数える。候補だけで数えると、コートが
     // 使用中のあいだ人数が減って上限が急に下がる（10人2面で 4 → 1）。
+    // attending を渡されたらそれを使う（同じラウンドの待機に入っている人など、候補から外した人も数える）
+    this.avoidConsecutive = opts.avoidConsecutive ?? false;
+    for (const p of opts.attending ?? []) if (!this.ratingOf.has(p.name)) this.ratingOf.set(p.name, p.rating);
     const attending = new Set(this.players.map((p) => p.name));
-    for (const m of this.pastMatches) if (m.in_play) for (const n of [...m.team_a, ...m.team_b]) attending.add(n);
+    if (opts.attending) for (const p of opts.attending) attending.add(p.name);
+    else for (const m of this.pastMatches) if (m.in_play) for (const n of [...m.team_a, ...m.team_b]) attending.add(n);
     this.nAttending = attending.size;
     const rs: number[] = [];
     for (const n of attending) {
@@ -573,6 +605,18 @@ export class GoodDayEngine {
         [p0, p2, p1, p3],
         [p0, p3, p1, p2],
       ];
+
+      // 連続ラウンドの回避（無効なら何も数えない。乱数も使わない）
+      let consecutive = 0;
+      let sameFour = 0;
+      let restKey: number | null = null;
+      if (this.avoidConsecutive) {
+        // 前のラウンド（か同じラウンド）に出た人。待機の試合も出たものとして数える
+        for (const nm of names) if ((this.ledger.lastPlayedRound.get(nm) ?? -2) >= this.ledger.round - 1) consecutive++;
+        for (const [a1, a2, b1, b2] of splits) sameFour += this.ledger.matchCount.get(matchKey([a1.name, a2.name], [b1.name, b2.name])) ?? 0;
+        restKey = consecutive + repeatMax + sameFour;
+      }
+
       for (const [a1, a2, b1, b2] of splits) {
         // 同じ所属どうしのペアは捨てずに減点する（なるべく避ける）
         let sameTeam = 0;
@@ -625,6 +669,9 @@ export class GoodDayEngine {
           pairRepeat,
           exactRepeat,
           sameTeam,
+          consecutive,
+          sameFour,
+          restKey,
           level: 0,
           planScore: null,
         });

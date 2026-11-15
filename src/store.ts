@@ -371,6 +371,44 @@ export function availablePlayers(s: AppState, p: Project = currentProject(s)): P
   return attendingPlayers(s, p).filter((x) => !inPlay.has(x.name));
 }
 
+export interface ProposalPool {
+  /** 次の試合の候補 */
+  players: Player[];
+  /** 試合中なので外した人（組み合わせに入れる人のうち） */
+  playing: string[];
+}
+
+/**
+ * 「次の試合を組む」の候補。新しい試合は待機の最後（matches の末尾）に入る。
+ *  - 試合中の人は外す。ただし待機が面数ぶん以上あって、その人の試合が新しい試合より 2 ラウンド以上前なら残す
+ *    （新しい試合がコートに入る頃には終わっている）
+ *  - 新しい試合と同じラウンドの試合（待機・進行中）に入っている人は外す
+ *  - 同じラウンドの終わった試合の人も外すが、それで 4 人に足りなければ戻す
+ * 待機の試合は決まった試合として扱う（出場回数・同席・ラウンドはエンジンが matches 全体から数える）。
+ */
+export function proposalPool(p: Project, attending: readonly Player[], courts: number): ProposalPool {
+  const c = Math.max(1, courts);
+  const n = p.matches.length;
+  const round = Math.floor(n / c);
+  const queued = p.matches.filter((m) => !m.in_play && m.result === null).length;
+  const playing = new Set<string>();
+  const sameRound = new Set<string>();
+  const sameRoundDone = new Set<string>();
+  p.matches.forEach((m, i) => {
+    const r = Math.floor(i / c);
+    const names = [...m.team_a, ...m.team_b];
+    const live = m.in_play && m.result === null;
+    if (live && !(queued >= c && r <= round - 2)) for (const x of names) playing.add(x);
+    if (r === round) for (const x of names) (live || m.result === null ? sameRound : sameRoundDone).add(x);
+  });
+  const base = attending.filter((x) => !playing.has(x.name) && !sameRound.has(x.name));
+  const strict = base.filter((x) => !sameRoundDone.has(x.name));
+  return {
+    players: strict.length >= 4 ? strict : base,
+    playing: attending.filter((x) => playing.has(x.name)).map((x) => x.name),
+  };
+}
+
 export function playedIn(p: Project, name: string): boolean {
   return p.matches.some((m) => m.team_a.includes(name) || m.team_b.includes(name));
 }

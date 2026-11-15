@@ -4,7 +4,7 @@ import { GoodDayEngine, countPlays, notesOf } from "../core/dayEngine";
 import { pairingToMatch, type Match, type MatchPairing, type MatchResult } from "../core/models";
 import { gameWinProb, pairStrength } from "../core/winModel";
 import { buildDashboard } from "../dashboard";
-import { attendingPlayers, availablePlayers, deleteMatches, lateMaps, memberPlayers, type Project } from "../store";
+import { attendingPlayers, deleteMatches, lateMaps, memberPlayers, proposalPool, type Project } from "../store";
 import { CheckIcon, ChevronDown, ChevronLeft, ChevronRight, LayersIcon, NoteIcon, PlusIcon } from "./icons";
 import { MatchDetailSheet } from "./MatchDetailSheet";
 import { PlanSheet } from "./PlanSheet";
@@ -18,6 +18,8 @@ interface Proposal {
   /** 組み合わせごとに諦めた点（あれば画面に出す） */
   notes: string[][];
   index: number;
+  /** 候補の人の連続待ち（新しい試合の時点。待機の試合も出たものとして数える） */
+  waits: Map<string, number>;
 }
 
 const isDone = (m: Match) => m.result !== null;
@@ -43,7 +45,6 @@ export function MatchesView(props: ViewProps) {
 
   const members = useMemo(() => memberPlayers(state, project), [state, project]);
   const attending = useMemo(() => attendingPlayers(state, project), [state, project]);
-  const available = useMemo(() => availablePlayers(state, project), [state, project]);
   const courts = Math.max(1, project.config.courts);
 
   const noOf = useMemo(() => new Map(project.matches.map((m, i) => [m.id, i + 1])), [project.matches]);
@@ -52,23 +53,23 @@ export function MatchesView(props: ViewProps) {
   const queued = project.matches.filter((m) => !m.in_play && !isDone(m));
   const done = project.matches.filter(isDone);
 
-  // 案に入れる人。
-  //   空いたコートにすぐ入る試合（待機が空でコートに空きがある）… 進行中の人は外す（これまでどおり）
-  //   待機の後ろに並ぶ試合 … 進行中の人も入れる。ただし同じラウンドの試合にすでに入っている人は外す
+  // 案に入れる人（試合中の人・同じラウンドの試合に入っている人は外す。store.proposalPool）
   const forNow = queued.length === 0 && inPlay.length < courts;
-  const candidates = useMemo(() => {
-    if (forNow) return available;
-    const n = project.matches.length;
-    const sameRound = new Set(project.matches.slice(n - (n % courts)).flatMap((m) => [...m.team_a, ...m.team_b]));
-    return attending.filter((p) => !sameRound.has(p.name));
-  }, [forNow, available, attending, project.matches, courts]);
+  const pool = useMemo(() => proposalPool(project, attending, courts), [project, attending, courts]);
+  const candidates = pool.players;
   const canPropose = candidates.length >= 4;
+  const shortMsg =
+    attending.length < 4
+      ? "組める人が 4 人未満です（メンバータブで組み合わせに入れる人を確認）"
+      : pool.playing.length > 0
+        ? "試合中の人を除くと 4 人未満です（試合が終わってから組んでください）"
+        : "同じラウンドの試合に入っている人を除くと 4 人未満です";
 
-  // 出番待ちの人：コートに入っていない、組み合わせに入れる人。連続で休んだラウンド数は、始まった試合（進行中と終了）だけで数える
-  const started = useMemo(() => project.matches.filter((m) => m.in_play || isDone(m)), [project.matches]);
+  // 出番待ちの人：コートに入っていない、組み合わせに入れる人。
+  // 待機の試合も決まった試合として数える（連続で休むラウンドは、待機の試合が終わった時点まで）
   // 連続待ちの上限は、メンバー全員ではなく組み合わせに入れる人数で決める（エンジンと同じ）
   const late = useMemo(() => lateMaps(project), [project]);
-  const dash = useMemo(() => buildDashboard(members, started, project.config, { attending: attending.length, joined: late.joined }), [members, started, project.config, attending.length, late]);
+  const dash = useMemo(() => buildDashboard(members, project.matches, project.config, { attending: attending.length, joined: late.joined }), [members, project.matches, project.config, attending.length, late]);
   const waitOf = useMemo(() => new Map(dash.people.rows.map((r) => [r.name, r.current_wait])), [dash]);
   const waitCap = dash.people.meta.wait_cap;
   const playing = new Set(inPlay.flatMap((m) => [...m.team_a, ...m.team_b]));
@@ -81,7 +82,7 @@ export function MatchesView(props: ViewProps) {
 
   const propose = () => {
     if (!canPropose) {
-      notify("組める人が 4 人未満です。メンバータブで組み合わせに入れる人を確認してください。");
+      notify(shortMsg + "。");
       return;
     }
     // 遅れて来た人は、仮の試合数を出場回数に足し、連続待ちは来た時点から数える
@@ -94,6 +95,10 @@ export function MatchesView(props: ViewProps) {
       allPlayers: state.db,
       plays,
       joined: late.joined,
+      // 候補から外した人（試合中・同じラウンド）も出席者として数える（連続待ち・同席回数の上限が縮まないように）
+      attending,
+      // 前のラウンドに出た人（待機の試合も含む）をなるべく続けて入れない
+      avoidConsecutive: true,
     });
     const cands = engine.generateCandidates(project.settings.rating_match, project.settings.avoid_same_team);
     if (cands.length === 0) {
@@ -101,7 +106,9 @@ export function MatchesView(props: ViewProps) {
       setProposal(null);
       return;
     }
-    setProposal({ pairings: cands.map((c) => c.match), notes: cands.map(notesOf), index: 0 });
+    // 長く休んでいる人の表示は、エンジンと同じ数え方（待機の試合も含めて、新しい試合の時点まで）
+    const waits = new Map(candidates.map((p) => [p.name, engine.ledger.waitedRounds(p.name)]));
+    setProposal({ pairings: cands.map((c) => c.match), notes: cands.map(notesOf), index: 0, waits });
   };
 
   const adopt = () => {
@@ -256,7 +263,7 @@ export function MatchesView(props: ViewProps) {
                   <div class="foot">
                     {canPropose
                       ? <>待機の最後（<span class="mono">#{nextNo}・R{roundOf(nextNo)}</span>）に入ります</>
-                      : "組める人が 4 人未満です（メンバータブで組み合わせに入れる人を確認）"}
+                      : shortMsg}
                   </div>
                 </div>
               )}
@@ -266,7 +273,7 @@ export function MatchesView(props: ViewProps) {
 
           {resting.length > 0 && (
             <section class="section">
-              <div class="section-h"><h2>出番待ちの人 <span class="mono">{resting.length}</span></h2><span class="note">連続で休んだラウンド → 次の試合</span></div>
+              <div class="section-h"><h2>出番待ちの人 <span class="mono">{resting.length}</span></h2><span class="note">待機の試合まで含めて連続で休むラウンド → 次の試合</span></div>
               <div class="chips">
                 {resting.map((w) => (
                   <span class={"chip" + (longWait(w.wait) ? " long" : "")} key={w.name}>
@@ -318,7 +325,7 @@ export function MatchesView(props: ViewProps) {
           project={project}
           hideRatings={state.prefs.hide_ratings}
           eyebrow={`#${nextNo}・R${roundOf(nextNo)}・待機の最後に入る`}
-          waitOf={new Map(resting.map((w) => [w.name, w.wait]))}
+          waitOf={proposal.waits}
           onMove={(d) => setProposal({ ...proposal, index: (proposal.index + d + proposal.pairings.length) % proposal.pairings.length })}
           onAdopt={adopt}
           onClose={() => setProposal(null)}
