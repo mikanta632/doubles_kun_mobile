@@ -24,9 +24,11 @@
   --sans: "IBM Plex Sans JP", system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --nav-h: 60px;
-  /* 画面の上下端の余裕。iPhone は端がぼやけて見える（ステータスバーやツールバーの下）ので少し離す */
-  --edge-top: calc(env(safe-area-inset-top) + 20px);
-  --edge-bottom: calc(env(safe-area-inset-bottom) + 10px);
+  /* 画面の上下端の余裕。iPhone は端がぼやけて見える（ステータスバーやツールバーの下）ので少し離す。
+     下はホームバーの帯（safe-area-inset-bottom、約 34px）の上半分ほどにタブの余白を重ねる（iPhone 標準のタブと同じくらいの高さ）。
+     帯がない端末やブラウザ（inset 0）では 10px 空ける */
+  --edge-top: calc(env(safe-area-inset-top) + 30px);
+  --edge-bottom: max(10px, calc(env(safe-area-inset-bottom) - 10px));
 }
 
 * { box-sizing: border-box; }
